@@ -167,7 +167,33 @@ var movs = [];
 var productos = [];
 var grafico = null;
 
-document.getElementById('inp-fecha').value = new Date().toISOString().split('T')[0];
+/*document.getElementById('inp-fecha').value = new Date().toISOString().split('T')[0];*/
+
+function parseFecha(val) {
+  // accepts DD/MM/YYYY or YYYY-MM-DD, returns YYYY-MM-DD for storage
+  if(!val) return '';
+  if(val.indexOf('-') > -1) return val;
+  var p = val.split('/');
+  if(p.length === 3 && p[2].length === 4) return p[2]+'-'+p[1]+'-'+p[0];
+  return '';
+}
+
+function formatFecha(val) {
+  // converts YYYY-MM-DD to DD/MM/YYYY for display
+  if(!val) return '';
+  if(val.indexOf('-') > -1) { var p=val.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+  return val;
+}
+
+document.getElementById('inp-fecha').value = formatFecha(new Date().toISOString().split('T')[0]);
+
+document.getElementById('inp-fecha').addEventListener('input', function(e) {
+  var v = e.target.value.replace(/[^0-9]/g,'');
+  if(v.length >= 3 && v.length <= 4) v = v.slice(0,2)+'/'+v.slice(2);
+  else if(v.length >= 5) v = v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4,8);
+  e.target.value = v;
+});
+
 
 function apiGet() {
   return fetch(API).then(function(r){ return r.json(); });
@@ -212,7 +238,8 @@ function populateProds() {
 
 function registrar() {
   var prod = document.getElementById('sel-prod').value;
-  var fecha = document.getElementById('inp-fecha').value;
+ /* var fecha = document.getElementById('inp-fecha').value;*/
+  var fecha = parseFecha(document.getElementById('inp-fecha').value);
   var cant = parseFloat(document.getElementById('inp-cantidad').value);
   var obs = document.getElementById('inp-obs').value;
   if(!prod){ showToast('Selecciona un producto','egreso'); return; }
@@ -367,7 +394,6 @@ function renderTabla() {
       + '<td>'+parseFloat(m.cant).toFixed(2)+'</td>'
       + '<td class="'+(b<0?'bal-neg':'bal-pos')+'">'+b.toFixed(2)+'</td>'
       + '<td style="color:#aaa;font-size:12px">'+(m.obs||'--')+'</td>'
-      + '<td><button class="del-btn" onclick="eliminar('+m.id+')" title="Eliminar"><i class="ti ti-trash"></i></button></td>'
       + '</tr>';
   }).join('');
 }
