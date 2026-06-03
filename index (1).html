@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock de Reactivos</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;min-height:100vh}
+.topbar{background:#2F5496;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:10px}
+.topbar h1{font-size:17px;font-weight:500}
+.container{max-width:680px;margin:0 auto;padding:16px}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{flex:1;padding:11px;border:1.5px solid #ddd;border-radius:10px;background:#fff;cursor:pointer;font-size:14px;font-weight:500;color:#888;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
+.tab.active.ingreso{background:#EAF3DE;border-color:#639922;color:#27500A}
+.tab.active.egreso{background:#FCEBEB;border-color:#A32D2D;color:#501313}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:18px;margin-bottom:14px}
+.field{margin-bottom:14px}
+label{display:block;font-size:13px;color:#666;margin-bottom:6px;font-weight:500}
+input,select{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#222;font-size:14px;font-family:Arial,sans-serif}
+input:focus,select:focus{outline:none;border-color:#639922;box-shadow:0 0 0 2px rgba(99,153,34,.15)}
+.prod-row{display:flex;gap:8px;align-items:flex-end}
+.prod-row select{flex:1}
+.btn-add-prod{padding:10px 14px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;font-size:13px;white-space:nowrap;color:#555}
+.btn-submit{width:100%;padding:12px;border-radius:8px;border:none;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
+.btn-ingreso{background:#3B6D11;color:#fff}
+.btn-ingreso:hover{background:#27500A}
+.btn-egreso{background:#A32D2D;color:#fff}
+.btn-egreso:hover{background:#791F1F}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:0}
+.metric{background:#f8f8f8;border-radius:8px;padding:14px 10px;text-align:center}
+.mval{font-size:22px;font-weight:500;margin-top:4px}
+.mlbl{font-size:11px;color:#888}
+.m-in .mval{color:#27500A}
+.m-eg .mval{color:#A32D2D}
+.section-title{font-size:13px;font-weight:500;color:#888;margin-bottom:12px;display:flex;align-items:center;gap:6px;justify-content:space-between}
+.filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.filter-row select{width:auto;font-size:13px;padding:7px 10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f5f5f5;padding:8px 10px;text-align:left;font-weight:500;color:#666;border-bottom:1px solid #eee;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f0;color:#222}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.badge-ingreso{background:#EAF3DE;color:#3B6D11}
+.badge-egreso{background:#FCEBEB;color:#A32D2D}
+.bal-pos{color:#3B6D11;font-weight:500}
+.bal-neg{color:#A32D2D;font-weight:500}
+.del-btn{background:none;border:none;cursor:pointer;color:#bbb;padding:2px 6px;border-radius:4px;font-size:13px}
+.del-btn:hover{color:#A32D2D;background:#FCEBEB}
+.empty{text-align:center;padding:2rem;color:#aaa;font-size:13px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 22px;border-radius:8px;font-size:14px;font-weight:500;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast-ingreso{background:#EAF3DE;color:#27500A;border:1px solid #639922}
+.toast-egreso{background:#FCEBEB;color:#501313;border:1px solid #A32D2D}
+.toast-error{background:#fff3cd;color:#856404;border:1px solid #ffc107}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:20px;width:300px;border:1px solid #ddd}
+.modal h3{font-size:15px;font-weight:500;margin-bottom:14px}
+.modal input{margin-bottom:12px}
+.modal-btns{display:flex;gap:8px}
+.modal-btns button{flex:1;padding:9px;border-radius:8px;font-size:13px;cursor:pointer;font-family:Arial,sans-serif}
+.btn-cancel{border:1px solid #ddd;background:#f5f5f5;color:#555}
+.btn-ok{border:none;background:#3B6D11;color:#fff}
+.loading{text-align:center;padding:2rem;color:#888;font-size:13px}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid #ddd;border-top-color:#2F5496;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tbl-wrap{overflow-x:auto}
+@media(max-width:480px){.metrics{grid-template-columns:1fr 1fr}.m-bal{grid-column:span 2}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <i class="ti ti-flask" style="font-size:20px"></i>
+  <h1>Stock de Reactivos</h1>
+</div>
+
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab ingreso active" onclick="setTipo('ingreso')">
+      <i class="ti ti-arrow-down-circle"></i> Ingreso
+    </button>
+    <button class="tab egreso" onclick="setTipo('egreso')">
+      <i class="ti ti-arrow-up-circle"></i> Egreso
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label>Producto</label>
+      <div class="prod-row">
+        <select id="sel-prod"><option value="">Cargando productos...</option></select>
+        <button class="btn-add-prod" onclick="openModal()"><i class="ti ti-plus"></i> Nuevo</button>
+      </div>
+    </div>
+    <div class="field">
+      <label id="lbl-fecha">Fecha de ingreso</label>
+      <input type="date" id="inp-fecha">
+    </div>
+    <div class="field">
+      <label>Cantidad</label>
+      <input type="number" id="inp-cantidad" min="0.01" step="0.01" placeholder="0">
+    </div>
+    <div class="field">
+      <label>Observaciones <span style="font-weight:400;color:#aaa">(opcional)</span></label>
+      <input type="text" id="inp-obs" placeholder="...">
+    </div>
+    <button class="btn-submit btn-ingreso" id="btn-submit" onclick="registrar()">
+      <i class="ti ti-check"></i>
+      <span id="btn-txt">Registrar ingreso</span>
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="section-title"><span><i class="ti ti-chart-bar"></i> Balance general</span></div>
+    <div class="metrics">
+      <div class="metric m-in"><div class="mlbl">Total ingresos</div><div class="mval" id="tot-in">—</div></div>
+      <div class="metric m-eg"><div class="mlbl">Total egresos</div><div class="mval" id="tot-eg">—</div></div>
+      <div class="metric m-bal"><div class="mlbl">Stock neto</div><div class="mval" id="tot-bal">—</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">
+      <span><i class="ti ti-list"></i> Movimientos</span>
+      <span id="rec-count" style="font-weight:400;font-size:12px"></span>
+    </div>
+    <div class="filter-row">
+      <select id="flt-prod" onchange="renderTabla()"><option value="">Todos los productos</option></select>
+      <select id="flt-tipo" onchange="renderTabla()">
+        <option value="">Todos</option>
+        <option value="ingreso">Ingresos</option>
+        <option value="egreso">Egresos</option>
+      </select>
+    </div>
+    <div class="tbl-wrap">
+      <div class="loading" id="loading-movs"><span class="spinner"></span>Cargando movimientos...</div>
+      <table id="tabla" style="display:none">
+        <thead>
+          <tr><th>Tipo</th><th>Producto</th><th>Fecha</th><th>Cantidad</th><th>Balance</th><th>Obs.</th><th></th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h3>Nuevo producto</h3>
+    <input type="text" id="inp-nuevo-prod" placeholder="Nombre del producto">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-ok" onclick="addProd()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbwynKNEILnGLb0djFjk6As35TlyLImRVA2TyVO-cRkodZ_6VfdhvZGf_X5uWRvw3y0wZQ/exec';
+
+let tipo = 'ingreso';
+let movs = [];
+let productos = [];
+
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('inp-fecha').value = today;
+
+async function apiGet(){
+  const r = await fetch(API);
+  return r.json();
+}
+
+async function apiPost(body){
+  await fetch(API, {method:'POST', body: JSON.stringify(body)});
+}
+
+async function cargarProductos(){
+  try {
+    const r = await fetch(API, {method:'POST', body: JSON.stringify({action:'getProds'})});
+    const data = await r.json();
+    productos = Array.isArray(data) ? data.filter(Boolean) : [];
+  } catch(e){ productos = []; }
+  populateProds();
+}
+
+async function cargarMovimientos(){
+  document.getElementById('loading-movs').style.display='block';
+  document.getElementById('tabla').style.display='none';
+  try {
+    movs = await apiGet();
+    if(!Array.isArray(movs)) movs = [];
+    movs = movs.map(m=>({...m, cant: parseFloat(m.cant)||0}));
+  } catch(e){ movs=[]; }
+  document.getElementById('loading-movs').style.display='none';
+  document.getElementById('tabla').style.display='table';
+  renderTabla();
+  renderMetrics();
+}
+
+function populateProds(){
+  const opts = productos.map(p=>`<option value="${p}">${p}</option>`).join('');
+  document.getElementById('sel-prod').innerHTML='<option value="">Seleccionar producto...</option>'+opts;
+  document.getElementById('flt-prod').innerHTML='<option value="">Todos los productos</option>'+opts;
+}
+
+async function registrar(){
+  const prod = document.getElementById('sel-prod').value;
+  const fecha = document.getElementById('inp-fecha').value;
+  const cant = parseFloat(document.getElementById('inp-cantidad').value);
+  const obs = document.getElementById('inp-obs').value;
+  if(!prod){ showToast('Seleccioná un producto','egreso'); return; }
+  if(!fecha){ showToast('Ingresá una fecha','egreso'); return; }
+  if(!cant||cant<=0){ showToast('Ingresá una cantidad válida','egreso'); return; }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+  const id = Date.now();
+  try {
+    await apiPost({action:'add', id, tipo, prod, fecha, cant, obs});
+    movs.push({id:String(id), tipo, prod, fecha, cant, obs});
+    document.getElementById('inp-cantidad').value='';
+    document.getElementById('inp-obs').value='';
+    showToast(tipo==='ingreso'?'Ingreso registrado':'Egreso registrado', tipo);
+    renderTabla();
+    renderMetrics();
+  } catch(e){
+    showToast('Error al guardar. Revisá la conexión.','error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<i class="ti ti-check"></i> <span id="btn-txt">Registrar ${tipo}</span>`;
+}
+
+async function eliminar(id){
+  if(!confirm('¿Eliminar este movimiento?')) return;
+  try {
+    await apiPost({action:'delete', id});
+    movs = movs.filter(m=>String(m.id)!==String(id));
+    renderTabla();
+    renderMetrics();
+    showToast('Registro eliminado','egreso');
+  } catch(e){
+    showToast('Error al eliminar','error');
+  }
+}
+
+function renderMetrics(){
+  const totIn = movs.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+m.cant,0);
+  const totEg = movs.filter(m=>m.tipo==='egreso').reduce((s,m)=>s+m.cant,0);
+  document.getElementById('tot-in').textContent = +totIn.toFixed(2);
+  document.getElementById('tot-eg').textContent = +totEg.toFixed(2);
+  const bal = totIn - totEg;
+  const bEl = document.getElementById('tot-bal');
+  bEl.textContent = +bal.toFixed(2);
+  bEl.style.color = bal < 0 ? '#A32D2D' : bal === 0 ? '#888' : '#27500A';
+}
+
+function renderTabla(){
+  const fProd = document.getElementById('flt-prod').value;
+  const fTipo = document.getElementById('flt-tipo').value;
+
+  const sorted = [...movs].sort((a,b)=>b.fecha.localeCompare(a.fecha)||(b.id>a.id?1:-1));
+
+  const cumMap = {};
+  const withBal = [...movs].sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.id>b.id?1:-1)).map(m=>{
+    if(!cumMap[m.prod]) cumMap[m.prod]=0;
+    cumMap[m.prod] += m.tipo==='ingreso' ? m.cant : -m.cant;
+    return {...m, bal: cumMap[m.prod]};
+  });
+  const balById = Object.fromEntries(withBal.map(m=>[String(m.id), m.bal]));
+
+  const filtered = sorted.filter(m=>{
+    if(fProd && m.prod!==fProd) return false;
+    if(fTipo && m.tipo!==fTipo) return false;
+    return true;
+  });
+
+  document.getElementById('rec-count').textContent = filtered.length + ' registro' + (filtered.length!==1?'s':'');
+
+  const tbody = document.getElementById('tbody');
+  if(!filtered.length){
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty">Sin movimientos registrados</div></td></tr>';
+    return;
+  }
+
+  const fmt = d => d ? d.split('-').reverse().join('/') : '';
+  tbody.innerHTML = filtered.map(m=>{
+    const b = balById[String(m.id)];
+    return `<tr>
+      <td><span class="badge badge-${m.tipo}">${m.tipo==='ingreso'?'↓ Ingreso':'↑ Egreso'}</span></td>
+      <td>${m.prod}</td>
+      <td>${fmt(m.fecha)}</td>
+      <td>${+parseFloat(m.cant).toFixed(2)}</td>
+      <td class="${b<0?'bal-neg':'bal-pos'}">${+b.toFixed(2)}</td>
+      <td style="color:#aaa;font-size:12px">${m.obs||'—'}</td>
+      <td><button class="del-btn" onclick="eliminar(${m.id})" title="Eliminar"><i class="ti ti-trash"></i></button></td>
+    </tr>`;
+  }).join('');
+}
+
+function setTipo(t){
+  tipo = t;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.tab.'+t).classList.add('active');
+  document.getElementById('lbl-fecha').textContent = t==='ingreso' ? 'Fecha de ingreso' : 'Fecha de egreso';
+  document.getElementById('btn-submit').className = 'btn-submit btn-' + t;
+  document.getElementById('btn-submit').innerHTML = `<i class="ti ti-check"></i> <span>Registrar ${t}</span>`;
+}
+
+function openModal(){ document.getElementById('modal-bg').classList.add('open'); setTimeout(()=>document.getElementById('inp-nuevo-prod').focus(),50); }
+function closeModal(){ document.getElementById('modal-bg').classList.remove('open'); document.getElementById('inp-nuevo-prod').value=''; }
+
+async function addProd(){
+  const v = document.getElementById('inp-nuevo-prod').value.trim();
+  if(!v) return;
+  if(productos.includes(v)){ showToast('El producto ya existe','egreso'); return; }
+  try {
+    await apiPost({action:'addProd', prod: v});
+    productos.push(v);
+    populateProds();
+    document.getElementById('sel-prod').value = v;
+    closeModal();
+    showToast('Producto agregado','ingreso');
+  } catch(e){
+    showToast('Error al guardar producto','error');
+  }
+}
+
+document.getElementById('inp-nuevo-prod').addEventListener('keydown', e=>{ if(e.key==='Enter') addProd(); });
+
+function showToast(msg, t){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast toast-' + (t==='ingreso'?'ingreso':t==='egreso'?'egreso':'error');
+  el.style.opacity = 1;
+  setTimeout(()=>el.style.opacity=0, 2500);
+}
+
+cargarProductos();
+cargarMovimientos();
+</script>
+</body>
+</html>
