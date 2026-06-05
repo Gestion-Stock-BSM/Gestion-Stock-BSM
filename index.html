@@ -48,7 +48,7 @@ td{padding:8px 10px;border-bottom:1px solid #f0f0f0;color:#222}
 .badge-egreso{background:#FCEBEB;color:#A32D2D}
 .bal-pos{color:#3B6D11;font-weight:500}
 .bal-neg{color:#A32D2D;font-weight:500}
-.del-btn{background:none;border:none;cursor:pointer;color:#bbb;padding:2px 6px;border-radius:4px;font-size:13px}
+.del-btn{background:none;border:none;cursor:pointer;color:#bbb;padding:2px 6px;border-radius:4px;font-size:13px;transition: all 0.15s;}
 .del-btn:hover{color:#A32D2D;background:#FCEBEB}
 .empty{text-align:center;padding:2rem;color:#aaa;font-size:13px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 22px;border-radius:8px;font-size:14px;font-weight:500;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
@@ -167,33 +167,17 @@ var movs = [];
 var productos = [];
 var grafico = null;
 
-/*document.getElementById('inp-fecha').value = new Date().toISOString().split('T')[0];*/
+// Establecer fecha actual por defecto en formato YYYY-MM-DD para el input tipo date
+document.getElementById('inp-fecha').value = new Date().toISOString().split('T')[0];
 
-function parseFecha(val) {
-  // accepts DD/MM/YYYY or YYYY-MM-DD, returns YYYY-MM-DD for storage
+function formatFechaDisplay(val) {
   if(!val) return '';
-  if(val.indexOf('-') > -1) return val;
-  var p = val.split('/');
-  if(p.length === 3 && p[2].length === 4) return p[2]+'-'+p[1]+'-'+p[0];
-  return '';
-}
-
-function formatFecha(val) {
-  // converts YYYY-MM-DD to DD/MM/YYYY for display
-  if(!val) return '';
-  if(val.indexOf('-') > -1) { var p=val.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+  if(val.indexOf('-') > -1) { 
+    var p = val.split('-'); 
+    return p[2] + '/' + p[1] + '/' + p[0]; 
+  }
   return val;
 }
-
-document.getElementById('inp-fecha').value = formatFecha(new Date().toISOString().split('T')[0]);
-
-document.getElementById('inp-fecha').addEventListener('input', function(e) {
-  var v = e.target.value.replace(/[^0-9]/g,'');
-  if(v.length >= 3 && v.length <= 4) v = v.slice(0,2)+'/'+v.slice(2);
-  else if(v.length >= 5) v = v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4,8);
-  e.target.value = v;
-});
-
 
 function apiGet() {
   return fetch(API).then(function(r){ return r.json(); });
@@ -231,20 +215,23 @@ function cargarMovimientos() {
 }
 
 function populateProds() {
-  var opts = productos.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+  var opts = productos.map(function(p){ 
+    var safeProd = escapeHtml(p);
+    return '<option value="'+safeProd+'">'+safeProd+'</option>'; 
+  }).join('');
   document.getElementById('sel-prod').innerHTML = '<option value="">Seleccionar producto...</option>' + opts;
   document.getElementById('flt-prod').innerHTML = '<option value="">Todos los productos</option>' + opts;
 }
 
 function registrar() {
   var prod = document.getElementById('sel-prod').value;
- /* var fecha = document.getElementById('inp-fecha').value;*/
-  var fecha = parseFecha(document.getElementById('inp-fecha').value);
+  var fecha = document.getElementById('inp-fecha').value; // Retorna directamente YYYY-MM-DD
   var cant = parseFloat(document.getElementById('inp-cantidad').value);
   var obs = document.getElementById('inp-obs').value;
   if(!prod){ showToast('Selecciona un producto','egreso'); return; }
   if(!fecha){ showToast('Ingresa una fecha','egreso'); return; }
-  if(!cant||cant<=0){ showToast('Ingresa una cantidad valida','egreso'); return; }
+  if(!cant||cant<=0){ showToast('Ingresa una cantidad válida','egreso'); return; }
+  
   var btn = document.getElementById('btn-submit');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Guardando...';
@@ -258,7 +245,7 @@ function registrar() {
       renderTabla();
       renderMetrics();
     })
-    .catch(function(){ showToast('Error al guardar. Revisa la conexion.','error'); })
+    .catch(function(){ showToast('Error al guardar. Revisa la conexión.','error'); })
     .then(function(){
       btn.disabled = false;
       btn.innerHTML = '<i class="ti ti-check"></i> Registrar ' + tipo;
@@ -344,11 +331,10 @@ function renderGrafico() {
 
 function descargarExcel() {
   var resumen = getResumen();
-  var fmt = function(d){ return d ? d.split('-').reverse().join('/') : '--'; };
-  var filas = [['Producto','Ultimo ingreso (fecha)','Cantidad ultimo ingreso','Ultimo egreso (fecha)','Cantidad ultimo egreso','Stock neto']];
+  var filas = [['Producto','Último ingreso (fecha)','Cantidad último ingreso','Último egreso (fecha)','Cantidad último egreso','Stock neto']];
   Object.keys(resumen).forEach(function(prod){
     var r = resumen[prod];
-    filas.push([prod, fmt(r.ultIngFecha), r.ultIngCant||0, fmt(r.ultEgrFecha), r.ultEgrCant||0, parseFloat(r.stock.toFixed(2))]);
+    filas.push([prod, formatFechaDisplay(r.ultIngFecha) || '--', r.ultIngCant||0, formatFechaDisplay(r.ultEgrFecha) || '--', r.ultEgrCant||0, parseFloat(r.stock.toFixed(2))]);
   });
   var ws = XLSX.utils.aoa_to_sheet(filas);
   ws['!cols'] = [{wch:24},{wch:22},{wch:22},{wch:22},{wch:22},{wch:14}];
@@ -380,22 +366,61 @@ function renderTabla() {
   });
   document.getElementById('rec-count').textContent = filtered.length + ' registro' + (filtered.length!==1?'s':'');
   var tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  
   if(!filtered.length){
     tbody.innerHTML = '<tr><td colspan="7"><div class="empty">Sin movimientos registrados</div></td></tr>';
     return;
   }
-  var fmt = function(d){ return d ? d.split('-').reverse().join('/') : ''; };
-  tbody.innerHTML = filtered.map(function(m){
+  
+  filtered.forEach(function(m){
     var b = balById[String(m.id)];
-    return '<tr>'
-      + '<td><span class="badge badge-'+m.tipo+'">'+(m.tipo==='ingreso'?'Ingreso':'Egreso')+'</span></td>'
-      + '<td>'+m.prod+'</td>'
-      + '<td>'+fmt(m.fecha)+'</td>'
-      + '<td>'+parseFloat(m.cant).toFixed(2)+'</td>'
-      + '<td class="'+(b<0?'bal-neg':'bal-pos')+'">'+b.toFixed(2)+'</td>'
-      + '<td style="color:#aaa;font-size:12px">'+(m.obs||'--')+'</td>'
-      + '</tr>';
-  }).join('');
+    var tr = document.createElement('tr');
+    
+    // Tipo badge
+    var tdTipo = document.createElement('td');
+    tdTipo.innerHTML = '<span class="badge badge-'+m.tipo+'">'+(m.tipo==='ingreso'?'Ingreso':'Egreso')+'</span>';
+    tr.appendChild(tdTipo);
+    
+    // Producto seguro
+    var tdProd = document.createElement('td');
+    tdProd.textContent = m.prod;
+    tr.appendChild(tdProd);
+    
+    // Fecha
+    var tdFecha = document.createElement('td');
+    tdFecha.textContent = formatFechaDisplay(m.fecha);
+    tr.appendChild(tdFecha);
+    
+    // Cantidad
+    var tdCant = document.createElement('td');
+    tdCant.textContent = parseFloat(m.cant).toFixed(2);
+    tr.appendChild(tdCant);
+    
+    // Balance acumulado
+    var tdBal = document.createElement('td');
+    tdBal.className = b < 0 ? 'bal-neg' : 'bal-pos';
+    tdBal.textContent = b.toFixed(2);
+    tr.appendChild(tdBal);
+    
+    // Obs
+    var tdObs = document.createElement('td');
+    tdObs.style.color = '#aaa';
+    tdObs.style.fontSize = '12px';
+    tdObs.textContent = m.obs || '--';
+    tr.appendChild(tdObs);
+    
+    // Botón de eliminar restaurado
+    var tdAcciones = document.createElement('td');
+    var btnDel = document.createElement('button');
+    btnDel.className = 'del-btn';
+    btnDel.innerHTML = '<i class="ti ti-trash"></i>';
+    btnDel.onclick = function() { eliminar(m.id); };
+    tdAcciones.appendChild(btnDel);
+    tr.appendChild(tdAcciones);
+    
+    tbody.appendChild(tr);
+  });
 }
 
 function setTipo(t) {
@@ -403,8 +428,10 @@ function setTipo(t) {
   document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('active'); });
   document.querySelector('.tab.'+t).classList.add('active');
   document.getElementById('lbl-fecha').textContent = t==='ingreso' ? 'Fecha de ingreso' : 'Fecha de egreso';
-  document.getElementById('btn-submit').className = 'btn-submit btn-' + t;
-  document.getElementById('btn-submit').innerHTML = '<i class="ti ti-check"></i> Registrar ' + t;
+  
+  var btn = document.getElementById('btn-submit');
+  btn.className = 'btn-submit btn-' + t;
+  btn.innerHTML = '<i class="ti ti-check"></i> <span id="btn-txt">Registrar ' + t + '</span>';
 }
 
 function openModal() {
@@ -442,6 +469,10 @@ function showToast(msg, t) {
   el.className = 'toast toast-' + (t==='ingreso'?'ingreso':t==='egreso'?'egreso':'error');
   el.style.opacity = 1;
   setTimeout(function(){ el.style.opacity = 0; }, 2500);
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
 cargarProductos();
