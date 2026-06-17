@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock de Reactivos</title>
+<title>Stock de Reactivos Avanzado</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -19,9 +19,11 @@ body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;min-height:100vh
 .tab.active.egreso{background:#FCEBEB;border-color:#A32D2D;color:#501313}
 .card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:18px;margin-bottom:14px}
 .field{margin-bottom:14px}
+.dynamic-field{display:none;} /* Se muestra u oculta por JS */
+.dynamic-field.show{display:block;}
 label{display:block;font-size:13px;color:#666;margin-bottom:6px;font-weight:500}
 input,select{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#222;font-size:14px;font-family:Arial,sans-serif}
-input:focus,select:focus{outline:none;border-color:#639922;box-shadow:0 0 0 2px rgba(99,153,34,.15)}
+input:focus,select:focus{outline:none;border-color:#2F5496;box-shadow:0 0 0 2px rgba(47,84,150,.15)}
 .prod-row{display:flex;gap:8px;align-items:flex-end}
 .prod-row select{flex:1}
 .btn-add-prod{padding:10px 14px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;font-size:13px;white-space:nowrap;color:#555}
@@ -57,13 +59,13 @@ td{padding:8px 10px;border-bottom:1px solid #f0f0f0;color:#222}
 .toast-error{background:#fff3cd;color:#856404;border:1px solid #ffc107}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:12px;padding:20px;width:300px;border:1px solid #ddd}
+.modal{background:#fff;border-radius:12px;padding:20px;width:320px;border:1px solid #ddd}
 .modal h3{font-size:15px;font-weight:500;margin-bottom:14px}
 .modal input{margin-bottom:12px}
 .modal-btns{display:flex;gap:8px}
 .modal-btns button{flex:1;padding:9px;border-radius:8px;font-size:13px;cursor:pointer;font-family:Arial,sans-serif}
 .btn-cancel{border:1px solid #ddd;background:#f5f5f5;color:#555}
-.btn-ok{border:none;background:#3B6D11;color:#fff}
+.btn-ok{border:none;background:#2F5496;color:#fff}
 .loading{text-align:center;padding:2rem;color:#888;font-size:13px}
 .spinner{display:inline-block;width:18px;height:18px;border:2px solid #ddd;border-top-color:#2F5496;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -77,7 +79,7 @@ td{padding:8px 10px;border-bottom:1px solid #f0f0f0;color:#222}
 <body>
 <div class="topbar">
   <i class="ti ti-flask" style="font-size:20px"></i>
-  <h1>Stock de Reactivos</h1>
+  <h1>Stock de Reactivos - Gestión de Lotes</h1>
 </div>
 <div class="container">
   <div class="tabs">
@@ -88,14 +90,34 @@ td{padding:8px 10px;border-bottom:1px solid #f0f0f0;color:#222}
       <i class="ti ti-arrow-up-circle"></i> Egreso
     </button>
   </div>
+  
   <div class="card">
     <div class="field">
       <label>Producto</label>
       <div class="prod-row">
-        <select id="sel-prod"><option value="">Cargando productos...</option></select>
-        <button class="btn-add-prod" onclick="openModal()"><i class="ti ti-plus"></i> Nuevo</button>
+        <select id="sel-prod" onchange="actualizarComboLotes()"><option value="">Cargando productos...</option></select>
+        <button class="btn-add-prod" onclick="openModal('prod')"><i class="ti ti-plus"></i> Nuevo</button>
       </div>
     </div>
+
+    <div class="field">
+      <label>Número de Lote (Letras y Números)</label>
+      <input type="text" id="inp-lote" placeholder="Ej: LOT123A" pattern="[A-Za-z0-9]+">
+    </div>
+
+    <div class="field dynamic-field show" id="fld-vencimiento">
+      <label>Fecha y Hora de Vencimiento <span style="font-weight:400;color:#aaa">(opcional)</span></label>
+      <input type="datetime-local" id="inp-vencimiento">
+    </div>
+
+    <div class="field dynamic-field" id="fld-destino">
+      <label>Destino</label>
+      <div class="prod-row">
+        <select id="sel-destino"><option value="">Seleccionar destino...</option></select>
+        <button class="btn-add-prod" onclick="openModal('dest')"><i class="ti ti-plus"></i> Nuevo Destino</button>
+      </div>
+    </div>
+
     <div class="field">
       <label id="lbl-fecha">Fecha de ingreso</label>
       <input type="date" id="inp-fecha">
@@ -113,6 +135,7 @@ td{padding:8px 10px;border-bottom:1px solid #f0f0f0;color:#222}
       <span id="btn-txt">Registrar ingreso</span>
     </button>
   </div>
+
   <div class="card">
     <div class="section-title">
       <span><i class="ti ti-chart-bar"></i> Balance general</span>
@@ -125,9 +148,10 @@ td{padding:8px 10px;border-bottom:1px solid #f0f0f0;color:#222}
     </div>
     <div class="chart-wrap"><canvas id="grafico-stock"></canvas></div>
   </div>
+
   <div class="card">
     <div class="section-title">
-      <span><i class="ti ti-list"></i> Movimientos</span>
+      <span><i class="ti ti-list"></i> Movimientos recientes</span>
       <span id="rec-count" style="font-weight:400;font-size:12px"></span>
     </div>
     <div class="filter-row">
@@ -139,39 +163,48 @@ td{padding:8px 10px;border-bottom:1px solid #f0f0f0;color:#222}
       </select>
     </div>
     <div class="tbl-wrap">
-      <div class="loading" id="loading-movs"><span class="spinner"></span>Cargando movimientos...</div>
+      <div class="loading" id="loading-movs"><span class="spinner"></span>Cargando datos...</div>
       <table id="tabla" style="display:none">
         <thead>
-          <tr><th>Tipo</th><th>Producto</th><th>Fecha</th><th>Cantidad</th><th>Balance</th><th>Obs.</th><th></th></tr>
+          <tr><th>Tipo</th><th>Producto</th><th>Lote</th><th>Fecha</th><th>Cant.</th><th>Destino/Venc.</th><th>Obs.</th><th></th></tr>
         </thead>
         <tbody id="tbody"></tbody>
       </table>
     </div>
   </div>
 </div>
+
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
-    <h3>Nuevo producto</h3>
-    <input type="text" id="inp-nuevo-prod" placeholder="Nombre del producto">
+    <h3 id="modal-title">Nuevo elemento</h3>
+    <input type="text" id="inp-nuevo-item" placeholder="">
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-ok" onclick="addProd()">Agregar</button>
+      <button class="btn-ok" id="btn-modal-save" onclick="saveModalData()">Agregar</button>
     </div>
   </div>
 </div>
+
 <div class="toast" id="toast"></div>
+
 <script>
-var API = 'https://script.google.com/macros/s/AKfycbwynKNEILnGLb0djFjk6As35TlyLImRVA2TyVO-cRkodZ_6VfdhvZGf_X5uWRvw3y0wZQ/exec';
+var API = 'https://script.google.com/macros/s/AKfycbyTpW_HDEjeLcOrvLcL1h9-ozTWc2pPntnYmQ-Ea-ldg7OXFtCIDtHQxLBoGFCQxUw/exec';
 var tipo = 'ingreso';
 var movs = [];
 var productos = [];
+var destinos = [];
+var modalTarget = 'prod'; // 'prod' o 'dest'
 var grafico = null;
 
-// Establecer fecha actual por defecto en formato YYYY-MM-DD para el input tipo date
 document.getElementById('inp-fecha').value = new Date().toISOString().split('T')[0];
 
 function formatFechaDisplay(val) {
-  if(!val) return '';
+  if(!val) return '--';
+  if(val.indexOf('T') > -1) { // Datetime-local format
+    var parts = val.split('T');
+    var dateParts = parts[0].split('-');
+    return dateParts[2] + '/' + dateParts[1] + '/' + dateParts[0] + ' ' + parts[1];
+  }
   if(val.indexOf('-') > -1) { 
     var p = val.split('-'); 
     return p[2] + '/' + p[1] + '/' + p[0]; 
@@ -187,74 +220,125 @@ function apiPost(body) {
   return fetch(API, {method:'POST', body: JSON.stringify(body)});
 }
 
-function cargarProductos() {
-  return apiPost({action:'getProds'})
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      productos = Array.isArray(data) ? data.filter(Boolean) : [];
-      populateProds();
-    })
-    .catch(function(){ productos = []; populateProds(); });
-}
-
-function cargarMovimientos() {
+function cargarInicial() {
   document.getElementById('loading-movs').style.display = 'block';
   document.getElementById('tabla').style.display = 'none';
-  return apiGet()
+  
+  apiPost({action:'getInicialData'})
+    .then(function(r){ return r.json(); })
     .then(function(data){
-      movs = Array.isArray(data) ? data : [];
+      productos = Array.isArray(data.productos) ? data.productos.filter(Boolean) : [];
+      destinos = Array.isArray(data.destinos) ? data.destinos.filter(Boolean) : [];
+      movs = Array.isArray(data.movimientos) ? data.movimientos : [];
       movs = movs.map(function(m){ return Object.assign({}, m, {cant: parseFloat(m.cant)||0}); });
-    })
-    .catch(function(){ movs = []; })
-    .then(function(){
+      
+      populateCombos();
       document.getElementById('loading-movs').style.display = 'none';
       document.getElementById('tabla').style.display = 'table';
       renderTabla();
       renderMetrics();
+    })
+    .catch(function(){ 
+      showToast('Error al sincronizar con la base de datos', 'error');
     });
 }
 
-function populateProds() {
-  var opts = productos.map(function(p){ 
-    var safeProd = escapeHtml(p);
-    return '<option value="'+safeProd+'">'+safeProd+'</option>'; 
+function populateCombos() {
+  var optsProd = productos.map(function(p){ 
+    var safe = escapeHtml(p); return '<option value="'+safe+'">'+safe+'</option>'; 
   }).join('');
-  document.getElementById('sel-prod').innerHTML = '<option value="">Seleccionar producto...</option>' + opts;
-  document.getElementById('flt-prod').innerHTML = '<option value="">Todos los productos</option>' + opts;
+  document.getElementById('sel-prod').innerHTML = '<option value="">Seleccionar producto...</option>' + optsProd;
+  document.getElementById('flt-prod').innerHTML = '<option value="">Todos los productos</option>' + optsProd;
+
+  var optsDest = destinos.map(function(d){ 
+    var safe = escapeHtml(d); return '<option value="'+safe+'">'+safe+'</option>'; 
+  }).join('');
+  document.getElementById('sel-destino').innerHTML = '<option value="">Seleccionar destino...</option>' + optsDest;
+}
+
+function setTipo(t) {
+  tipo = t;
+  document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelector('.tab.'+t).classList.add('active');
+  document.getElementById('lbl-fecha').textContent = t==='ingreso' ? 'Fecha de ingreso' : 'Fecha de egreso';
+  
+  if(t === 'ingreso') {
+    document.getElementById('fld-vencimiento').classList.add('show');
+    document.getElementById('fld-destino').classList.remove('show');
+  } else {
+    document.getElementById('fld-vencimiento').classList.remove('show');
+    document.getElementById('fld-destino').classList.add('show');
+  }
+  
+  var btn = document.getElementById('btn-submit');
+  btn.className = 'btn-submit btn-' + t;
+  btn.innerHTML = '<i class="ti ti-check"></i> <span id="btn-txt">Registrar ' + t + '</span>';
 }
 
 function registrar() {
   var prod = document.getElementById('sel-prod').value;
-  var fecha = document.getElementById('inp-fecha').value; // Retorna directamente YYYY-MM-DD
+  var lote = document.getElementById('inp-lote').value.trim();
+  var fecha = document.getElementById('inp-fecha').value;
   var cant = parseFloat(document.getElementById('inp-cantidad').value);
   var obs = document.getElementById('inp-obs').value;
-  if(!prod){ showToast('Selecciona un producto','egreso'); return; }
-  if(!fecha){ showToast('Ingresa una fecha','egreso'); return; }
-  if(!cant||cant<=0){ showToast('Ingresa una cantidad válida','egreso'); return; }
-  
+  var vencimiento = document.getElementById('inp-vencimiento').value;
+  var destinoVal = document.getElementById('sel-destino').value;
+
+  if(!prod){ showToast('Selecciona un producto','error'); return; }
+  if(!lote){ showToast('Ingresa un número de lote','error'); return; }
+  // Validar formato alfanumérico del lote
+  if(!/^[a-zA-Z0-9]+$/.test(lote)) { showToast('El lote debe ser alfanumérico (letras/números)','error'); return; }
+  if(!fecha){ showToast('Ingresa una fecha','error'); return; }
+  if(!cant||cant<=0){ showToast('Ingresa una cantidad válida','error'); return; }
+  if(tipo === 'egreso' && !destinoVal){ showToast('Selecciona un destino','error'); return; }
+
   var btn = document.getElementById('btn-submit');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Guardando...';
+  
   var id = Date.now();
-  apiPost({action:'add', id:id, tipo:tipo, prod:prod, fecha:fecha, cant:cant, obs:obs})
-    .then(function(){
-      movs.push({id:String(id), tipo:tipo, prod:prod, fecha:fecha, cant:cant, obs:obs});
-      document.getElementById('inp-cantidad').value = '';
-      document.getElementById('inp-obs').value = '';
-      showToast(tipo==='ingreso'?'Ingreso registrado':'Egreso registrado', tipo);
-      renderTabla();
-      renderMetrics();
+  var payload = {
+    action: 'addMovimiento',
+    id: id,
+    tipo: tipo,
+    prod: prod,
+    lote: lote,
+    fecha: fecha,
+    cant: cant,
+    obs: obs,
+    vencimiento: tipo === 'ingreso' ? vencimiento : '',
+    destino: tipo === 'egreso' ? destinoVal : ''
+  };
+
+  apiPost(payload)
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res.status === 'success') {
+        movs.push({
+          id: String(id), tipo: tipo, prod: prod, lote: lote, fecha: fecha, 
+          cant: cant, obs: obs, vencimiento: payload.vencimiento, destino: payload.destino
+        });
+        document.getElementById('inp-cantidad').value = '';
+        document.getElementById('inp-obs').value = '';
+        document.getElementById('inp-lote').value = '';
+        document.getElementById('inp-vencimiento').value = '';
+        showToast(tipo==='ingreso'?'Ingreso registrado':'Egreso registrado', tipo);
+        renderTabla();
+        renderMetrics();
+      } else {
+        showToast(res.message || 'Error al guardar', 'error');
+      }
     })
     .catch(function(){ showToast('Error al guardar. Revisa la conexión.','error'); })
     .then(function(){
       btn.disabled = false;
-      btn.innerHTML = '<i class="ti ti-check"></i> Registrar ' + tipo;
+      setTipo(tipo);
     });
 }
 
 function eliminar(id) {
-  if(!confirm('Eliminar este movimiento?')) return;
-  apiPost({action:'delete', id:id})
+  if(!confirm('¿Eliminar este movimiento?')) return;
+  apiPost({action:'deleteMovimiento', id:id})
     .then(function(){
       movs = movs.filter(function(m){ return String(m.id) !== String(id); });
       renderTabla();
@@ -266,19 +350,10 @@ function eliminar(id) {
 
 function getResumen() {
   var map = {};
-  var sorted = movs.slice().sort(function(a,b){
-    return a.fecha.localeCompare(b.fecha) || (a.id > b.id ? 1 : -1);
-  });
-  sorted.forEach(function(m){
-    if(!map[m.prod]) map[m.prod] = {stock:0, ultIngFecha:'', ultIngCant:0, ultEgrFecha:'', ultEgrCant:0};
-    var r = map[m.prod];
-    if(m.tipo === 'ingreso'){
-      r.stock += m.cant;
-      if(!r.ultIngFecha || m.fecha >= r.ultIngFecha){ r.ultIngFecha = m.fecha; r.ultIngCant = m.cant; }
-    } else {
-      r.stock -= m.cant;
-      if(!r.ultEgrFecha || m.fecha >= r.ultEgrFecha){ r.ultEgrFecha = m.fecha; r.ultEgrCant = m.cant; }
-    }
+  movs.forEach(function(m){
+    if(!map[m.prod]) map[m.prod] = 0;
+    if(m.tipo === 'ingreso') map[m.prod] += m.cant;
+    else map[m.prod] -= m.cant;
   });
   return map;
 }
@@ -298,7 +373,7 @@ function renderMetrics() {
 function renderGrafico() {
   var resumen = getResumen();
   var prods = Object.keys(resumen);
-  var valores = prods.map(function(p){ return parseFloat(resumen[p].stock.toFixed(2)); });
+  var valores = prods.map(function(p){ return parseFloat(resumen[p].toFixed(2)); });
   var colores = valores.map(function(v){ return v < 0 ? '#E24B4A' : v === 0 ? '#888780' : '#639922'; });
   var ctx = document.getElementById('grafico-stock').getContext('2d');
   if(grafico) grafico.destroy();
@@ -310,17 +385,13 @@ function renderGrafico() {
         label: 'Stock neto',
         data: valores,
         backgroundColor: colores,
-        borderRadius: 6,
-        borderSkipped: false
+        borderRadius: 6
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: {display: false},
-        tooltip: {callbacks: {label: function(c){ return 'Stock: ' + c.parsed.y; }}}
-      },
+      plugins: { legend: {display: false} },
       scales: {
         x: {grid: {display:false}, ticks: {font:{size:11}, color:'#666'}},
         y: {grid: {color:'#f0f0f0'}, ticks: {font:{size:11}, color:'#666'}, beginAtZero:true}
@@ -329,139 +400,112 @@ function renderGrafico() {
   });
 }
 
-function descargarExcel() {
-  var resumen = getResumen();
-  var filas = [['Producto','Último ingreso (fecha)','Cantidad último ingreso','Último egreso (fecha)','Cantidad último egreso','Stock neto']];
-  Object.keys(resumen).forEach(function(prod){
-    var r = resumen[prod];
-    filas.push([prod, formatFechaDisplay(r.ultIngFecha) || '--', r.ultIngCant||0, formatFechaDisplay(r.ultEgrFecha) || '--', r.ultEgrCant||0, parseFloat(r.stock.toFixed(2))]);
-  });
-  var ws = XLSX.utils.aoa_to_sheet(filas);
-  ws['!cols'] = [{wch:24},{wch:22},{wch:22},{wch:22},{wch:22},{wch:14}];
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Stock');
-  XLSX.writeFile(wb, 'Stock_Reactivos.xlsx');
-}
-
 function renderTabla() {
   var fProd = document.getElementById('flt-prod').value;
   var fTipo = document.getElementById('flt-tipo').value;
+  
   var sorted = movs.slice().sort(function(a,b){
     return b.fecha.localeCompare(a.fecha) || (b.id > a.id ? 1 : -1);
   });
-  var cumMap = {};
-  var withBal = movs.slice().sort(function(a,b){
-    return a.fecha.localeCompare(b.fecha) || (a.id > b.id ? 1 : -1);
-  }).map(function(m){
-    if(!cumMap[m.prod]) cumMap[m.prod] = 0;
-    cumMap[m.prod] += m.tipo === 'ingreso' ? m.cant : -m.cant;
-    return Object.assign({}, m, {bal: cumMap[m.prod]});
-  });
-  var balById = {};
-  withBal.forEach(function(m){ balById[String(m.id)] = m.bal; });
+
   var filtered = sorted.filter(function(m){
     if(fProd && m.prod !== fProd) return false;
     if(fTipo && m.tipo !== fTipo) return false;
     return true;
   });
+
   document.getElementById('rec-count').textContent = filtered.length + ' registro' + (filtered.length!==1?'s':'');
   var tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
   
   if(!filtered.length){
-    tbody.innerHTML = '<tr><td colspan="7"><div class="empty">Sin movimientos registrados</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty">Sin movimientos registrados</div></td></tr>';
     return;
   }
   
   filtered.forEach(function(m){
-    var b = balById[String(m.id)];
     var tr = document.createElement('tr');
     
-    // Tipo badge
-    var tdTipo = document.createElement('td');
-    tdTipo.innerHTML = '<span class="badge badge-'+m.tipo+'">'+(m.tipo==='ingreso'?'Ingreso':'Egreso')+'</span>';
-    tr.appendChild(tdTipo);
-    
-    // Producto seguro
-    var tdProd = document.createElement('td');
-    tdProd.textContent = m.prod;
-    tr.appendChild(tdProd);
-    
-    // Fecha
-    var tdFecha = document.createElement('td');
-    tdFecha.textContent = formatFechaDisplay(m.fecha);
-    tr.appendChild(tdFecha);
-    
-    // Cantidad
-    var tdCant = document.createElement('td');
-    tdCant.textContent = parseFloat(m.cant).toFixed(2);
-    tr.appendChild(tdCant);
-    
-    // Balance acumulado
-    var tdBal = document.createElement('td');
-    tdBal.className = b < 0 ? 'bal-neg' : 'bal-pos';
-    tdBal.textContent = b.toFixed(2);
-    tr.appendChild(tdBal);
-    
-    // Obs
-    var tdObs = document.createElement('td');
-    tdObs.style.color = '#aaa';
-    tdObs.style.fontSize = '12px';
-    tdObs.textContent = m.obs || '--';
-    tr.appendChild(tdObs);
-    
-    // Botón de eliminar restaurado
-    var tdAcciones = document.createElement('td');
-    var btnDel = document.createElement('button');
-    btnDel.className = 'del-btn';
-    btnDel.innerHTML = '<i class="ti ti-trash"></i>';
-    btnDel.onclick = function() { eliminar(m.id); };
-    tdAcciones.appendChild(btnDel);
-    tr.appendChild(tdAcciones);
-    
+    tr.innerHTML = `
+      <td><span class="badge badge-${m.tipo}">${m.tipo==='ingreso'?'Ingreso':'Egreso'}</span></td>
+      <td><b>${escapeHtml(m.prod)}</b></td>
+      <td><span style="font-family:monospace; background:#eee; padding:2px 4px; border-radius:4px">${escapeHtml(m.lote)}</span></td>
+      <td>${formatFechaDisplay(m.fecha)}</td>
+      <td>${parseFloat(m.cant).toFixed(2)}</td>
+      <td>${m.tipo==='ingreso' ? formatFechaDisplay(m.vencimiento) : `<i class="ti ti-map-pin"></i> ${escapeHtml(m.destino)}`}</td>
+      <td style="color:#aaa; font-size:12px">${escapeHtml(m.obs) || '--'}</td>
+      <td><button class="del-btn" onclick="eliminar('${m.id}')"><i class="ti ti-trash"></i></button></td>
+    `;
     tbody.appendChild(tr);
   });
 }
 
-function setTipo(t) {
-  tipo = t;
-  document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('active'); });
-  document.querySelector('.tab.'+t).classList.add('active');
-  document.getElementById('lbl-fecha').textContent = t==='ingreso' ? 'Fecha de ingreso' : 'Fecha de egreso';
+function openModal(target) {
+  modalTarget = target;
+  var title = document.getElementById('modal-title');
+  var input = document.getElementById('inp-nuevo-item');
   
-  var btn = document.getElementById('btn-submit');
-  btn.className = 'btn-submit btn-' + t;
-  btn.innerHTML = '<i class="ti ti-check"></i> <span id="btn-txt">Registrar ' + t + '</span>';
-}
-
-function openModal() {
+  if(target === 'prod') {
+    title.textContent = 'Nuevo Producto / Reactivo';
+    input.placeholder = 'Nombre del producto';
+  } else {
+    title.textContent = 'Nuevo Destino de Egreso';
+    input.placeholder = 'Ej: Laboratorio Hematología';
+  }
+  
   document.getElementById('modal-bg').classList.add('open');
-  setTimeout(function(){ document.getElementById('inp-nuevo-prod').focus(); }, 50);
+  setTimeout(function(){ input.focus(); }, 50);
 }
 
 function closeModal() {
   document.getElementById('modal-bg').classList.remove('open');
-  document.getElementById('inp-nuevo-prod').value = '';
+  document.getElementById('inp-nuevo-item').value = '';
 }
 
-function addProd() {
-  var v = document.getElementById('inp-nuevo-prod').value.trim();
-  if(!v) return;
-  if(productos.indexOf(v) >= 0){ showToast('El producto ya existe','egreso'); return; }
-  apiPost({action:'addProd', prod:v})
-    .then(function(){
-      productos.push(v);
-      populateProds();
-      document.getElementById('sel-prod').value = v;
-      closeModal();
-      showToast('Producto agregado','ingreso');
-    })
-    .catch(function(){ showToast('Error al guardar producto','error'); });
+function saveModalData() {
+  var value = document.getElementById('inp-nuevo-item').value.trim();
+  if(!value) return;
+
+  if(modalTarget === 'prod') {
+    if(productos.indexOf(value) >= 0){ showToast('El producto ya existe','error'); return; }
+    
+    apiPost({action:'addProd', prod:value})
+      .then(function(){
+        productos.push(value);
+        populateCombos();
+        document.getElementById('sel-prod').value = value;
+        closeModal();
+        showToast('Producto agregado','ingreso');
+      })
+      .catch(function(){ showToast('Error al guardar producto','error'); });
+      
+  } else {
+    // VALIDACIÓN: Comprobar que el destino no exista en el combo (Case-insensitive)
+    var existe = destinos.some(function(d) { return d.toLowerCase() === value.toLowerCase(); });
+    if(existe){ showToast('El destino ya se encuentra registrado','error'); return; }
+    
+    apiPost({action:'addDestino', destino:value})
+      .then(function(){
+        destinos.push(value);
+        populateCombos();
+        document.getElementById('sel-destino').value = value;
+        closeModal();
+        showToast('Destino agregado','ingreso');
+      })
+      .catch(function(){ showToast('Error al guardar destino','error'); });
+  }
 }
 
-document.getElementById('inp-nuevo-prod').addEventListener('keydown', function(e){
-  if(e.key === 'Enter') addProd();
-});
+function descargarExcel() {
+  var filas = [['Tipo', 'Producto', 'Lote', 'Fecha', 'Cantidad', 'Vencimiento', 'Destino', 'Observaciones']];
+  movs.forEach(function(m){
+    filas.push([m.tipo, m.prod, m.lote, m.fecha, m.cant, m.vencimiento || '--', m.destino || '--', m.obs || '']);
+  });
+  var ws = XLSX.utils.aoa_to_sheet(filas);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Historial');
+  XLSX.writeFile(wb, 'Historial_Reactivos_Lotes.xlsx');
+}
 
 function showToast(msg, t) {
   var el = document.getElementById('toast');
@@ -472,11 +516,12 @@ function showToast(msg, t) {
 }
 
 function escapeHtml(str) {
+  if(!str) return '';
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-cargarProductos();
-cargarMovimientos();
+// Carga todo al iniciar de forma unificada
+cargarInicial();
 </script>
 </body>
 </html>
