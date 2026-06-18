@@ -365,12 +365,13 @@ function apiPost(body) {
 
 // --- VISIBILIDAD DE CONTRASEÑA ---
 function togglePasswordVisibility() {
-  var passInp = document.getElementById('login-pass');
-  var eyeIcon = document.getElementById('btn-toggle-pass');
-  if(passInp.type === 'password') {
+  var passInp = document.getElementById('password');
+  var eyeIcon = document.getElementById('eye-icon');
+  
+  if (passInp && passInp.type === 'password') {
     passInp.type = 'text';
     eyeIcon.className = 'ti ti-eye-off toggle-password';
-  } else {
+  } else if (passInp) {
     passInp.type = 'password';
     eyeIcon.className = 'ti ti-eye toggle-password';
   }
