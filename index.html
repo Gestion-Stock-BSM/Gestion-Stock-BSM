@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock de Reactivos Avanzado</title>
+<title>Gestíón de Stock</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -12,7 +12,7 @@
 body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;min-height:100vh}
 .topbar{background:#2F5496;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:10px}
 .topbar h1{font-size:17px;font-weight:500}
-.container{max-width:680px;margin:0 auto;padding:16px}
+.container{max-width:760px;margin:0 auto;padding:16px} /* Un poco más ancho para albergar la columna extra */
 .tabs{display:flex;gap:8px;margin-bottom:16px}
 .tab{flex:1;padding:11px;border:1.5px solid #ddd;border-radius:10px;background:#fff;cursor:pointer;font-size:14px;font-weight:500;color:#888;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
 .tab.active.ingreso{background:#EAF3DE;border-color:#639922;color:#27500A}
@@ -76,7 +76,6 @@ td{padding:10px 10px;border-bottom:1px solid #f0f0f0;color:#222;vertical-align:m
 .chart-wrap{position:relative;height:220px;margin-top:4px}
 @media(max-width:480px){.metrics{grid-template-columns:1fr 1fr}.m-bal{grid-column:span 2}}
 
-/* NUEVOS ESTILOS PARA SUGERENCIAS Y ERROR EN EL MODAL */
 .msg-error-modal{font-size:11px;color:#A32D2D;margin-bottom:8px;display:none;font-weight:500}
 .coincidencias-box{border:1px solid #ddd;border-radius:8px;max-height:110px;overflow-y:auto;background:#fafafa;margin-bottom:8px;display:none}
 .coincidencia-item{padding:6px 10px;font-size:12px;color:#555;border-bottom:1px solid #eee;cursor:pointer}
@@ -181,7 +180,8 @@ td{padding:10px 10px;border-bottom:1px solid #f0f0f0;color:#222;vertical-align:m
             <th onclick="ordenarPor('lote')">Lote <span id="sort-lote" class="sort-icon"></span></th>
             <th onclick="ordenarPor('fecha')">Fecha <span id="sort-fecha" class="sort-icon"></span></th>
             <th onclick="ordenarPor('cant')">Cant. <span id="sort-cant" class="sort-icon"></span></th>
-            <th onclick="ordenarPor('destino')">Destino/Venc. <span id="sort-destino" class="sort-icon"></span></th>
+            <th onclick="ordenarPor('vencimiento')">Vencimiento <span id="sort-vencimiento" class="sort-icon"></span></th>
+            <th onclick="ordenarPor('destino')">Destino <span id="sort-destino" class="sort-icon"></span></th>
             <th onclick="ordenarPor('obs')">Obs. <span id="sort-obs" class="sort-icon"></span></th>
             <th></th>
           </tr>
@@ -218,11 +218,20 @@ var destinos = [];
 var modalTarget = 'prod'; 
 var grafico = null;
 
-// Variables de ordenación global
 var columnaOrden = 'fecha'; 
-var direccionOrden = 'desc'; // 'asc' o 'desc'
+var direccionOrden = 'desc'; 
 
-document.getElementById('inp-fecha').value = new Date().toISOString().split('T')[0];
+// CÁLCULO DE LA FECHA DE HOY (Ajustado a Zona Horaria Local ISO)
+var hoy = new Date();
+var yyyy = hoy.getFullYear();
+var mm = String(hoy.getMonth() + 1).padStart(2, '0');
+var dd = String(hoy.getDate()).padStart(2, '0');
+var fechaHoyFormato = yyyy + '-' + mm + '-' + dd;
+
+// Asignar valor inicial por defecto y restringir el máximo en el calendario
+var inpFecha = document.getElementById('inp-fecha');
+inpFecha.value = fechaHoyFormato;
+inpFecha.max = fechaHoyFormato;
 
 function formatFechaDisplay(val) {
   if(!val) return '--';
@@ -326,6 +335,13 @@ function registrar() {
   if(!lote){ showToast('Ingresa un número de lote','error'); return; }
   if(!/^[a-zA-Z0-9]+$/.test(lote)) { showToast('El lote debe ser alfanumérico','error'); return; }
   if(!fecha){ showToast('Ingresa una fecha','error'); return; }
+  
+  // VALIDACIÓN DE FECHA MANUAL (Por si se burla el max del input)
+  if(fecha > fechaHoyFormato) { 
+    showToast('La fecha no puede ser mayor a la del día de hoy','error'); 
+    return; 
+  }
+  
   if(!cant||cant<=0){ showToast('Ingresa una cantidad válida','error'); return; }
   if(tipo === 'egreso' && !destinoVal){ showToast('Selecciona un destino','error'); return; }
 
@@ -450,14 +466,17 @@ function ordenarPor(columna) {
 }
 
 function updateSortIcons() {
-  var columnas = ['tipo', 'prod', 'lote', 'fecha', 'cant', 'destino', 'obs'];
+  // MODIFICACIÓN: Lista de columnas actualizada
+  var columnas = ['tipo', 'prod', 'lote', 'fecha', 'cant', 'vencimiento', 'destino', 'obs'];
   columnas.forEach(function(col) {
     var el = document.getElementById('sort-' + col);
-    if (col === columnaOrden) {
-      el.textContent = (direccionOrden === 'asc') ? ' ▲' : ' ▼';
-      el.style.color = '#2F5496';
-    } else {
-      el.textContent = '';
+    if(el) {
+      if (col === columnaOrden) {
+        el.textContent = (direccionOrden === 'asc') ? ' ▲' : ' ▼';
+        el.style.color = '#2F5496';
+      } else {
+        el.textContent = '';
+      }
     }
   });
 }
@@ -480,11 +499,6 @@ function renderTabla() {
     if (columnaOrden === 'cant') {
       valA = parseFloat(a.cant) || 0;
       valB = parseFloat(b.cant) || 0;
-    } else if (columnaOrden === 'destino') {
-      valA = (a.tipo === 'ingreso' ? a.vencimiento : a.destino) || '';
-      valB = (b.tipo === 'ingreso' ? b.vencimiento : b.destino) || '';
-      valA = valA.toLowerCase();
-      valB = valB.toLowerCase();
     } else {
       valA = (a[columnaOrden] || '').toLowerCase();
       valB = (b[columnaOrden] || '').toLowerCase();
@@ -502,19 +516,25 @@ function renderTabla() {
   tbody.innerHTML = '';
   
   if(!filtered.length){
-    tbody.innerHTML = '<tr><td colspan="8"><div class="empty">Sin movimientos registrados</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty">Sin movimientos registrados</div></td></tr>';
     return;
   }
   
   filtered.forEach(function(m){
     var tr = document.createElement('tr');
+    
+    // MODIFICACIÓN: Renderizado de celdas separando de forma fija el vencimiento y el destino
+    var vencCell = m.vencimiento ? formatFechaDisplay(m.vencimiento) : '<span style="color:#ccc">--</span>';
+    var destCell = m.destino ? `<i class="ti ti-map-pin" style="font-size:11px;color:#888"></i> ${escapeHtml(m.destino)}` : '<span style="color:#ccc">--</span>';
+
     tr.innerHTML = `
       <td><span class="badge badge-${m.tipo}">${m.tipo==='ingreso'?'Ingreso':'Egreso'}</span></td>
       <td><b>${escapeHtml(m.prod)}</b></td>
       <td><span style="font-family:monospace; background:#eee; padding:2px 4px; border-radius:4px">${escapeHtml(m.lote)}</span></td>
       <td>${formatFechaDisplay(m.fecha)}</td>
       <td>${parseFloat(m.cant).toFixed(2)}</td>
-      <td>${m.tipo==='ingreso' ? formatFechaDisplay(m.vencimiento) : `<i class="ti ti-map-pin"></i> ${escapeHtml(m.destino)}`}</td>
+      <td>${vencCell}</td>
+      <td>${destCell}</td>
       <td style="color:#aaa; font-size:12px">${escapeHtml(m.obs) || '--'}</td>
       <td><button class="del-btn" onclick="eliminar('${m.id}')"><i class="ti ti-trash"></i></button></td>
     `;
@@ -527,7 +547,6 @@ function openModal(target) {
   var title = document.getElementById('modal-title');
   var input = document.getElementById('inp-nuevo-item');
   
-  // Limpiar estados previos de validación al abrir
   document.getElementById('msg-error-modal').style.display = 'none';
   document.getElementById('coincidencias-box').style.display = 'none';
   document.getElementById('btn-modal-save').disabled = false;
@@ -549,7 +568,6 @@ function closeModal() {
   document.getElementById('inp-nuevo-item').value = '';
 }
 
-// NUEVA FUNCIÓN: Valida la existencia insensible a mayúsculas y lista coincidencias en tiempo real
 function buscarCoincidencias() {
   var value = document.getElementById('inp-nuevo-item').value.trim().toLowerCase();
   var errorEl = document.getElementById('msg-error-modal');
@@ -563,20 +581,17 @@ function buscarCoincidencias() {
 
   if (!value) return;
 
-  // Seleccionar la lista correcta según el contexto del modal abierto
   var listaOrigen = (modalTarget === 'prod') ? productos : destinos;
 
-  // 1. Validar duplicación estricta por nombre (independiente de mayúsculas/minúsculas)
   var yaExiste = listaOrigen.some(function(item) {
     return item.toLowerCase() === value;
   });
 
   if (yaExiste) {
     errorEl.style.display = 'block';
-    btnSave.disabled = true; // Bloquear botón guardar
+    btnSave.disabled = true; 
   }
 
-  // 2. Filtrar coincidencias para el autocompletado de asistencia
   var coincidencias = listaOrigen.filter(function(item) {
     return item.toLowerCase().indexOf(value) > -1 && item.toLowerCase() !== value;
   });
@@ -587,10 +602,9 @@ function buscarCoincidencias() {
       var itemEl = document.createElement('div');
       itemEl.className = 'coincidencia-item';
       itemEl.textContent = item;
-      // Si el usuario hace clic en una sugerencia, se autocompleta el campo
       itemEl.onclick = function() {
         document.getElementById('inp-nuevo-item').value = item;
-        buscarCoincidencias(); // Volver a correr validación
+        buscarCoincidencias(); 
       };
       boxEl.appendChild(itemEl);
     });
@@ -604,7 +618,6 @@ function saveModalData() {
   var valueLower = value.toLowerCase();
 
   if(modalTarget === 'prod') {
-    // Validación de seguridad insensible a mayúsculas/minúsculas al guardar
     var existeProd = productos.some(function(p) { return p.toLowerCase() === valueLower; });
     if(existeProd){ showToast('El producto ya existe','error'); return; }
     
@@ -619,7 +632,6 @@ function saveModalData() {
       .catch(function(){ showToast('Error al guardar producto','error'); });
       
   } else {
-    // Validación de seguridad insensible a mayúsculas/minúsculas al guardar
     var existeDest = destinos.some(function(d) { return d.toLowerCase() === valueLower; });
     if(existeDest){ showToast('El destino ya se encuentra registrado','error'); return; }
     
