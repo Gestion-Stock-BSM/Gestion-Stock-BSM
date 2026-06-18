@@ -366,14 +366,16 @@ function apiPost(body) {
 // --- VISIBILIDAD DE CONTRASEÑA ---
 function togglePasswordVisibility() {
   var passInp = document.getElementById('password');
-  var eyeIcon = document.getElementById('eye-icon');
+  var eyeIcon = document.getElementById('btn-toggle-pass');
   
-  if (passInp && passInp.type === 'password') {
-    passInp.type = 'text';
-    eyeIcon.className = 'ti ti-eye-off toggle-password';
-  } else if (passInp) {
-    passInp.type = 'password';
-    eyeIcon.className = 'ti ti-eye toggle-password';
+  if (passInp) {
+    if (passInp.type === 'password') {
+      passInp.type = 'text';
+      eyeIcon.className = 'ti ti-eye-off toggle-password';
+    } else {
+      passInp.type = 'password';
+      eyeIcon.className = 'ti ti-eye toggle-password';
+    }
   }
 }
 
