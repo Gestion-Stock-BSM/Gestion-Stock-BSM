@@ -16,15 +16,17 @@ body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;min-height:100vh
 .login-card{background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);width:100%;max-width:380px;text-align:center}
 .login-card h2{color:#2F5496;margin-bottom:20px;font-size:22px;font-weight:600}
 
-/* Estructura Principal */
-.app-screen{display:none} /* Oculta hasta loguearse */
-.topbar{background:#2F5496;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:14px;justify-content:between}
+/* Estructura Principal - NUEVO HEADER GRIS PLATA CON LETRA NEGRA */
+.app-screen{display:none} 
+.topbar{background:#E0E4E8;color:#000000;padding:14px 20px;display:flex;align-items:center;gap:14px;justify-content:between;border-bottom:1px solid #ccc}
 .topbar-left{display:flex;align-items:center;gap:14px}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px}
 .topbar-logo{height:32px;max-width:120px;width:auto;display:block;object-fit:contain}
-.topbar h1{font-size:17px;font-weight:500}
-.btn-logout{background:rgba(255,255,255,0.15);border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px}
-.btn-logout:hover{background:rgba(255,255,255,0.3)}
+.topbar h1{font-size:17px;font-weight:600}
+
+/* Botón de salida adaptado al fondo claro del header */
+.btn-logout{background:rgba(0,0,0,0.08);border:1px solid rgba(0,0,0,0.15);color:#000;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500}
+.btn-logout:hover{background:rgba(0,0,0,0.15)}
 
 .container{max-width:760px;margin:0 auto;padding:16px}
 .tabs{display:flex;gap:8px;margin-bottom:16px}
@@ -38,8 +40,8 @@ body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;min-height:100vh
 .dynamic-field{display:none;} 
 .dynamic-field.show{display:block;}
 
-/* Labels grandes y en negrita */
-label{display:block;font-size:15px;color:#222;margin-bottom:6px;font-weight:700}
+/* LABELS GENERALES UN PUNTO MÁS CHICOS (De 15px pasaron a 14px) */
+label{display:block;font-size:14px;color:#222;margin-bottom:6px;font-weight:700}
 
 input,select{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#222;font-size:14px;font-family:Arial,sans-serif}
 input:focus,select:focus{outline:none;border-color:#2F5496;box-shadow:0 0 0 2px rgba(47,84,150,.15)}
@@ -107,7 +109,6 @@ td{padding:10px 10px;border-bottom:1px solid #f0f0f0;color:#222;vertical-align:m
 .coincidencia-item{padding:6px 10px;font-size:12px;color:#555;border-bottom:1px solid #eee;cursor:pointer}
 .coincidencia-item:hover{background:#2F5496;color:#fff}
 
-/* Ocultar elementos condicionalmente por rol */
 .only-admin { display: none; }
 body.perfil-Administrador .only-admin { display: block; }
 body.perfil-Administrador th.only-admin, body.perfil-Administrador td.only-admin { display: table-cell; }
