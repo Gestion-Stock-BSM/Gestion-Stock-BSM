@@ -308,7 +308,7 @@ body.perfil-Administrador th.only-admin, body.perfil-Administrador td.only-admin
 <div class="toast" id="toast"></div>
 
 <script>
-var API = 'https://script.google.com/macros/s/AKfycbzn4L38aw2PW52VIjqX8gNlygTG05MhjgdbZdIqA0YQYu3GOYBGo6ORa50ndt0PSARc/exec';
+var API = 'https://script.google.com/macros/s/AKfycbxRu9RTeJTNeK-vG5zajwM1M2f08ALv92XtAg-L2t6EhMCeUaanzt87oYOiIXrIcybV/exec';
 var tipo = 'ingreso';
 var movs = [];
 var productos = [];
@@ -347,7 +347,8 @@ function formatFechaDisplay(val) {
 }
 
 function apiPost(body) {
-  return fetch(API, {method:'POST', body: JSON.stringify(body)});
+  var url = API + '?payload=' + encodeURIComponent(JSON.stringify(body));
+  return fetch(url, {method:'GET'});
 }
 
 // --- LOGICA DE LOGIN Y SEGURIDAD ---
