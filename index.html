@@ -61,11 +61,12 @@ td{padding:10px 10px;border-bottom:1px solid #f0f0f0;color:#222;vertical-align:m
 .modal-bg.open{display:flex}
 .modal{background:#fff;border-radius:12px;padding:20px;width:320px;border:1px solid #ddd}
 .modal h3{font-size:15px;font-weight:500;margin-bottom:14px}
-.modal input{margin-bottom:12px}
-.modal-btns{display:flex;gap:8px}
+.modal input{margin-bottom:4px}
+.modal-btns{display:flex;gap:8px;margin-top:12px}
 .modal-btns button{flex:1;padding:9px;border-radius:8px;font-size:13px;cursor:pointer;font-family:Arial,sans-serif}
 .btn-cancel{border:1px solid #ddd;background:#f5f5f5;color:#555}
 .btn-ok{border:none;background:#2F5496;color:#fff}
+.btn-ok:disabled{background:#ccc;cursor:not-allowed}
 .loading{text-align:center;padding:2rem;color:#888;font-size:13px}
 .spinner{display:inline-block;width:18px;height:18px;border:2px solid #ddd;border-top-color:#2F5496;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -74,6 +75,13 @@ td{padding:10px 10px;border-bottom:1px solid #f0f0f0;color:#222;vertical-align:m
 .btn-download:hover{background:#2F5496;color:#fff}
 .chart-wrap{position:relative;height:220px;margin-top:4px}
 @media(max-width:480px){.metrics{grid-template-columns:1fr 1fr}.m-bal{grid-column:span 2}}
+
+/* NUEVOS ESTILOS PARA SUGERENCIAS Y ERROR EN EL MODAL */
+.msg-error-modal{font-size:11px;color:#A32D2D;margin-bottom:8px;display:none;font-weight:500}
+.coincidencias-box{border:1px solid #ddd;border-radius:8px;max-height:110px;overflow-y:auto;background:#fafafa;margin-bottom:8px;display:none}
+.coincidencia-item{padding:6px 10px;font-size:12px;color:#555;border-bottom:1px solid #eee;cursor:pointer}
+.coincidencia-item:last-child{border-bottom:none}
+.coincidencia-item:hover{background:#2F5496;color:#fff}
 </style>
 </head>
 <body>
@@ -187,7 +195,11 @@ td{padding:10px 10px;border-bottom:1px solid #f0f0f0;color:#222;vertical-align:m
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
     <h3 id="modal-title">Nuevo elemento</h3>
-    <input type="text" id="inp-nuevo-item" placeholder="">
+    <input type="text" id="inp-nuevo-item" oninput="buscarCoincidencias()" placeholder="">
+    
+    <div class="msg-error-modal" id="msg-error-modal">⚠️ Este ítem ya existe en el sistema</div>
+    <div class="coincidencias-box" id="coincidencias-box"></div>
+
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-ok" id="btn-modal-save" onclick="saveModalData()">Agregar</button>
@@ -267,7 +279,6 @@ function populateCombos() {
   document.getElementById('sel-destino').innerHTML = '<option value="">Seleccionar destino...</option>' + optsDest;
 }
 
-// NUEVA FUNCIÓN: Alimenta el combo de filtros de lotes basados en los movimientos existentes
 function populateFiltroLotes() {
   var lotesUnicos = [];
   movs.forEach(function(m){
@@ -349,7 +360,7 @@ function registrar() {
         document.getElementById('inp-lote').value = '';
         document.getElementById('inp-vencimiento').value = '';
         showToast(tipo==='ingreso'?'Ingreso registrado':'Egreso registrado', tipo);
-        populateFiltroLotes(); // Recargar filtros por si es un lote nuevo
+        populateFiltroLotes();
         renderTabla();
         renderMetrics();
       } else {
@@ -428,20 +439,16 @@ function renderGrafico() {
   });
 }
 
-// NUEVA FUNCIÓN: Maneja los clics en los encabezados para definir el orden
 function ordenarPor(columna) {
   if (columnaOrden === columna) {
-    // Si hace clic en la misma, invierte el sentido
     direccionOrden = (direccionOrden === 'asc') ? 'desc' : 'asc';
   } else {
-    // Si hace clic en otra, ordena de forma ascendente por defecto
     columnaOrden = columna;
     direccionOrden = 'asc';
   }
   renderTabla();
 }
 
-// NUEVA FUNCIÓN: Actualiza visualmente las flechitas de los encabezados de la tabla
 function updateSortIcons() {
   var columnas = ['tipo', 'prod', 'lote', 'fecha', 'cant', 'destino', 'obs'];
   columnas.forEach(function(col) {
@@ -458,32 +465,27 @@ function updateSortIcons() {
 function renderTabla() {
   var fProd = document.getElementById('flt-prod').value;
   var fTipo = document.getElementById('flt-tipo').value;
-  var fLote = document.getElementById('flt-lote').value; // Lectura del nuevo filtro
+  var fLote = document.getElementById('flt-lote').value;
   
-  // 1. Filtrar los elementos primero
   var filtered = movs.filter(function(m){
     if(fProd && m.prod !== fProd) return false;
     if(fTipo && m.tipo !== fTipo) return false;
-    if(fLote && m.lote !== fLote) return false; // Filtro estricto por lote
+    if(fLote && m.lote !== fLote) return false;
     return true;
   });
 
-  // 2. Ordenar dinámicamente según la columna y dirección elegida
   filtered.sort(function(a, b) {
     var valA, valB;
     
-    // Configurar qué valores comparar según la columna elegida
     if (columnaOrden === 'cant') {
       valA = parseFloat(a.cant) || 0;
       valB = parseFloat(b.cant) || 0;
     } else if (columnaOrden === 'destino') {
-      // Combina destino y vencimiento para ordenar el campo mixto
       valA = (a.tipo === 'ingreso' ? a.vencimiento : a.destino) || '';
       valB = (b.tipo === 'ingreso' ? b.vencimiento : b.destino) || '';
       valA = valA.toLowerCase();
       valB = valB.toLowerCase();
     } else {
-      // Campos de texto estándar e ID / Fecha
       valA = (a[columnaOrden] || '').toLowerCase();
       valB = (b[columnaOrden] || '').toLowerCase();
     }
@@ -493,7 +495,6 @@ function renderTabla() {
     return 0;
   });
 
-  // Actualizar los íconos ▲ o ▼ de los encabezados
   updateSortIcons();
 
   document.getElementById('rec-count').textContent = filtered.length + ' registro' + (filtered.length!==1?'s':'');
@@ -507,7 +508,6 @@ function renderTabla() {
   
   filtered.forEach(function(m){
     var tr = document.createElement('tr');
-    
     tr.innerHTML = `
       <td><span class="badge badge-${m.tipo}">${m.tipo==='ingreso'?'Ingreso':'Egreso'}</span></td>
       <td><b>${escapeHtml(m.prod)}</b></td>
@@ -527,6 +527,11 @@ function openModal(target) {
   var title = document.getElementById('modal-title');
   var input = document.getElementById('inp-nuevo-item');
   
+  // Limpiar estados previos de validación al abrir
+  document.getElementById('msg-error-modal').style.display = 'none';
+  document.getElementById('coincidencias-box').style.display = 'none';
+  document.getElementById('btn-modal-save').disabled = false;
+
   if(target === 'prod') {
     title.textContent = 'Nuevo Producto / Reactivo';
     input.placeholder = 'Nombre del producto';
@@ -544,12 +549,64 @@ function closeModal() {
   document.getElementById('inp-nuevo-item').value = '';
 }
 
+// NUEVA FUNCIÓN: Valida la existencia insensible a mayúsculas y lista coincidencias en tiempo real
+function buscarCoincidencias() {
+  var value = document.getElementById('inp-nuevo-item').value.trim().toLowerCase();
+  var errorEl = document.getElementById('msg-error-modal');
+  var boxEl = document.getElementById('coincidencias-box');
+  var btnSave = document.getElementById('btn-modal-save');
+  
+  errorEl.style.display = 'none';
+  boxEl.style.display = 'none';
+  boxEl.innerHTML = '';
+  btnSave.disabled = false;
+
+  if (!value) return;
+
+  // Seleccionar la lista correcta según el contexto del modal abierto
+  var listaOrigen = (modalTarget === 'prod') ? productos : destinos;
+
+  // 1. Validar duplicación estricta por nombre (independiente de mayúsculas/minúsculas)
+  var yaExiste = listaOrigen.some(function(item) {
+    return item.toLowerCase() === value;
+  });
+
+  if (yaExiste) {
+    errorEl.style.display = 'block';
+    btnSave.disabled = true; // Bloquear botón guardar
+  }
+
+  // 2. Filtrar coincidencias para el autocompletado de asistencia
+  var coincidencias = listaOrigen.filter(function(item) {
+    return item.toLowerCase().indexOf(value) > -1 && item.toLowerCase() !== value;
+  });
+
+  if (coincidencias.length > 0) {
+    boxEl.style.display = 'block';
+    coincidencias.forEach(function(item) {
+      var itemEl = document.createElement('div');
+      itemEl.className = 'coincidencia-item';
+      itemEl.textContent = item;
+      // Si el usuario hace clic en una sugerencia, se autocompleta el campo
+      itemEl.onclick = function() {
+        document.getElementById('inp-nuevo-item').value = item;
+        buscarCoincidencias(); // Volver a correr validación
+      };
+      boxEl.appendChild(itemEl);
+    });
+  }
+}
+
 function saveModalData() {
   var value = document.getElementById('inp-nuevo-item').value.trim();
   if(!value) return;
 
+  var valueLower = value.toLowerCase();
+
   if(modalTarget === 'prod') {
-    if(productos.indexOf(value) >= 0){ showToast('El producto ya existe','error'); return; }
+    // Validación de seguridad insensible a mayúsculas/minúsculas al guardar
+    var existeProd = productos.some(function(p) { return p.toLowerCase() === valueLower; });
+    if(existeProd){ showToast('El producto ya existe','error'); return; }
     
     apiPost({action:'addProd', prod:value})
       .then(function(){
@@ -562,8 +619,9 @@ function saveModalData() {
       .catch(function(){ showToast('Error al guardar producto','error'); });
       
   } else {
-    var existe = destinos.some(function(d) { return d.toLowerCase() === value.toLowerCase(); });
-    if(existe){ showToast('El destino ya se encuentra registrado','error'); return; }
+    // Validación de seguridad insensible a mayúsculas/minúsculas al guardar
+    var existeDest = destinos.some(function(d) { return d.toLowerCase() === valueLower; });
+    if(existeDest){ showToast('El destino ya se encuentra registrado','error'); return; }
     
     apiPost({action:'addDestino', destino:value})
       .then(function(){
