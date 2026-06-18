@@ -1,861 +1,266 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock de Reactivos Avanzado</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;min-height:100vh}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 250px;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
 
-/* Pantalla de Login */
-.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0f4f8;padding:20px}
-.login-card{background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);width:100%;max-width:380px;text-align:center}
-.login-card h2{color:#2F5496;margin-bottom:20px;font-size:22px;font-weight:600}
+        /* Sidebar Estilos */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #212529;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
 
-/* Estructura Principal - NUEVO HEADER GRIS PLATA CON LETRA NEGRA */
-.app-screen{display:none} 
-.topbar{background:#E0E4E8;color:#000000;padding:14px 20px;display:flex;align-items:center;gap:14px;justify-content:between;border-bottom:1px solid #ccc}
-.topbar-left{display:flex;align-items:center;gap:14px}
-.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px}
-.topbar-logo{height:32px;max-width:120px;width:auto;display:block;object-fit:contain}
-.topbar h1{font-size:17px;font-weight:600}
+        .sidebar-brand {
+            padding: 1.5rem;
+            font-size: 1.25rem;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #343a40;
+        }
 
-/* Botón de salida adaptado al fondo claro del header */
-.btn-logout{background:rgba(0,0,0,0.08);border:1px solid rgba(0,0,0,0.15);color:#000;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500}
-.btn-logout:hover{background:rgba(0,0,0,0.15)}
+        .nav-menu {
+            padding: 1rem 0;
+            list-style: none;
+            margin: 0;
+        }
 
-.container{max-width:760px;margin:0 auto;padding:16px}
-.tabs{display:flex;gap:8px;margin-bottom:16px}
-.tab{flex:1;padding:11px;border:1.5px solid #ddd;border-radius:10px;background:#fff;cursor:pointer;font-size:14px;font-weight:500;color:#888;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
-.tab.active.ingreso{background:#EAF3DE;border-color:#639922;color:#27500A}
-.tab.active.egreso{background:#FCEBEB;border-color:#A32D2D;color:#501313}
-.tab.active.admin-tab{background:#E2ECF7;border-color:#2F5496;color:#1A3668}
+        .nav-item-custom {
+            padding: 0.25rem 1rem;
+        }
 
-.card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:18px;margin-bottom:14px}
-.field{margin-bottom:14px}
-.dynamic-field{display:none;} 
-.dynamic-field.show{display:block;}
+        .nav-link-custom {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.75rem 1rem;
+            color: #ced4da;
+            text-decoration: none;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
 
-/* LABELS GENERALES UN PUNTO MÁS CHICOS (De 15px pasaron a 14px) */
-label{display:block;font-size:14px;color:#222;margin-bottom:6px;font-weight:700}
+        .nav-link-custom:hover {
+            background-color: #343a40;
+            color: #fff;
+        }
 
-input,select{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#222;font-size:14px;font-family:Arial,sans-serif}
-input:focus,select:focus{outline:none;border-color:#2F5496;box-shadow:0 0 0 2px rgba(47,84,150,.15)}
-.prod-row{display:flex;gap:8px;align-items:flex-end}
-.prod-row select{flex:1}
-.btn-add-prod{padding:10px 14px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;font-size:13px;white-space:nowrap;color:#555}
+        .nav-link-custom.active {
+            background-color: #0d6efd;
+            color: #fff;
+        }
 
-.btn-submit{width:100%;padding:12px;border-radius:8px;border:none;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
-.btn-ingreso{background:#3B6D11;color:#fff}
-.btn-ingreso:hover{background:#27500A}
-.btn-egreso{background:#A32D2D;color:#fff}
-.btn-egreso:hover{background:#791F1F}
-.btn-submit:disabled{opacity:.6;cursor:not-allowed}
+        /* Main Content Estilos */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+            transition: all 0.3s;
+        }
 
-.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-.metric{background:#f8f8f8;border-radius:8px;padding:14px 10px;text-align:center}
-.mval{font-size:22px;font-weight:500;margin-top:4px}
-.mlbl{font-size:11px;color:#888}
-.m-in .mval{color:#27500A}
-.m-eg .mval{color:#A32D2D}
+        .top-navbar {
+            background-color: #fff;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            margin-bottom: 2rem;
+        }
 
-.section-title{font-size:13px;font-weight:500;color:#888;margin-bottom:12px;display:flex;align-items:center;gap:6px;justify-content:space-between}
-.filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.filter-row select{width:auto;font-size:13px;padding:7px 10px;min-width:140px}
+        /* Card Custom */
+        .card-custom {
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            transition: transform 0.2s;
+        }
 
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{background:#f5f5f5;padding:10px 10px;text-align:left;font-weight:600;color:#555;border-bottom:2px solid #ddd;white-space:nowrap;cursor:pointer;user-select:none}
-th:hover{background:#e8e8e8;color:#222}
-th .sort-icon {font-size:11px;margin-left:4px;color:#999}
-td{padding:10px 10px;border-bottom:1px solid #f0f0f0;color:#222;vertical-align:middle}
+        .card-custom:hover {
+            transform: translateY(-5px);
+        }
 
-.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
-.badge-ingreso{background:#EAF3DE;color:#3B6D11}
-.badge-egreso{background:#FCEBEB;color:#A32D2D}
-.del-btn{background:none;border:none;cursor:pointer;color:#bbb;padding:4px 6px;border-radius:4px;font-size:13px;transition: all 0.15s;}
-.del-btn:hover{color:#A32D2D;background:#FCEBEB}
-.empty{text-align:center;padding:2rem;color:#aaa;font-size:13px}
-
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 22px;border-radius:8px;font-size:14px;font-weight:500;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
-.toast-ingreso{background:#EAF3DE;color:#27500A;border:1px solid #639922}
-.toast-egreso{background:#FCEBEB;color:#501313;border:1px solid #A32D2D}
-.toast-error{background:#fff3cd;color:#856404;border:1px solid #ffc107}
-
-/* Modales */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center}
-.modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:12px;padding:20px;width:320px;border:1px solid #ddd}
-.modal h3{font-size:15px;font-weight:500;margin-bottom:14px}
-.modal input{margin-bottom:4px}
-.modal-btns{display:flex;gap:8px;margin-top:12px}
-.modal-btns button{flex:1;padding:9px;border-radius:8px;font-size:13px;cursor:pointer}
-.btn-cancel{border:1px solid #ddd;background:#f5f5f5;color:#555}
-.btn-ok{border:none;background:#2F5496;color:#fff}
-
-.loading{text-align:center;padding:2rem;color:#888;font-size:13px}
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid #ddd;border-top-color:#2F5496;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.tbl-wrap{overflow-x:auto}
-.btn-download{display:flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid #2F5496;border-radius:8px;background:#fff;color:#2F5496;font-size:13px;font-weight:500;cursor:pointer}
-.btn-download:hover{background:#2F5496;color:#fff}
-.chart-wrap{position:relative;height:220px;margin-top:4px}
-
-.msg-error-modal{font-size:11px;color:#A32D2D;margin-bottom:8px;display:none;font-weight:500}
-.coincidencias-box{border:1px solid #ddd;border-radius:8px;max-height:110px;overflow-y:auto;background:#fafafa;margin-bottom:8px;display:none}
-.coincidencia-item{padding:6px 10px;font-size:12px;color:#555;border-bottom:1px solid #eee;cursor:pointer}
-.coincidencia-item:hover{background:#2F5496;color:#fff}
-
-.only-admin { display: none; }
-body.perfil-Administrador .only-admin { display: block; }
-body.perfil-Administrador th.only-admin, body.perfil-Administrador td.only-admin { display: table-cell; }
-</style>
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                margin-left: calc(-1 * var(--sidebar-width));
+            }
+            .sidebar.active {
+                margin-left: 0;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<div class="login-screen" id="view-login">
-  <div class="login-card">
-    <h2>Ingreso al Sistema</h2>
-    <div class="field" style="text-align:left">
-      <label>Usuario</label>
-      <input type="text" id="login-user" placeholder="Ej: admin">
-    </div>
-    <div class="field" style="text-align:left">
-      <label>Contraseña</label>
-      <input type="password" id="login-pass" placeholder="••••••••">
-    </div>
-    <button class="btn-submit btn-ingreso" id="btn-login" onclick="procesarLogin()" style="margin-top:10px">
-      <i class="ti ti-login"></i> Iniciar Sesión
-    </button>
-  </div>
-</div>
-
-<div class="app-screen" id="view-app">
-  <div class="topbar">
-    <div class="topbar-left">
-      <img src="logo.jpeg" alt="" class="topbar-logo" id="header-logo" onerror="this.style.display='none';">
-      <i class="ti ti-flask" style="font-size:20px"></i>
-      <h1>Stock de Reactivos - Gestión de Lotes</h1>
-    </div>
-    <div class="topbar-right">
-      <span id="user-display" style="font-weight:600"></span> 
-      <span id="role-display" style="opacity:0.8; font-style:italic"></span>
-      <button class="btn-logout" onclick="logout()"><i class="ti ti-logout"></i> Salir</button>
-    </div>
-  </div>
-  
-  <div class="container">
-    <div class="tabs">
-      <button class="tab ingreso active" id="tab-ingreso" onclick="setPanel('ingreso')">
-        <i class="ti ti-arrow-down-circle"></i> Ingreso
-      </button>
-      <button class="tab egreso" id="tab-egreso" onclick="setPanel('egreso')">
-        <i class="ti ti-arrow-up-circle"></i> Egreso
-      </button>
-      <button class="tab only-admin admin-tab" id="tab-admin" onclick="setPanel('admin')">
-        <i class="ti ti-users"></i> Alta de Usuarios
-      </button>
-    </div>
-    
-    <div id="panel-movimientos" class="panel-content">
-      <div class="card">
-        <div class="field">
-          <label>Producto</label>
-          <div class="prod-row">
-            <select id="sel-prod"><option value="">Cargando productos...</option></select>
-            <button class="btn-add-prod" onclick="openModal('prod')"><i class="ti ti-plus"></i> Nuevo</button>
-          </div>
-        </div>
-        <div class="field">
-          <label>Número de Lote (Letras y Números)</label>
-          <input type="text" id="inp-lote" placeholder="Ej: LOT123A" pattern="[A-Za-z0-9]+">
-        </div>
-        <div class="field dynamic-field show" id="fld-vencimiento">
-          <label>Fecha y Hora de Vencimiento <span style="font-weight:400;color:#aaa">(opcional)</span></label>
-          <input type="datetime-local" id="inp-vencimiento">
-        </div>
-        <div class="field dynamic-field" id="fld-destino">
-          <label>Destino</label>
-          <div class="prod-row">
-            <select id="sel-destino"><option value="">Seleccionar destino...</option></select>
-            <button class="btn-add-prod" onclick="openModal('dest')"><i class="ti ti-plus"></i> Nuevo Destino</button>
-          </div>
-        </div>
-        <div class="field">
-          <label id="lbl-fecha">Fecha de ingreso</label>
-          <input type="date" id="inp-fecha">
-        </div>
-        <div class="field">
-          <label>Cantidad</label>
-          <input type="number" id="inp-cantidad" min="0.01" step="0.01" placeholder="0">
-        </div>
-        <div class="field">
-          <label>Observaciones <span style="font-weight:400;color:#aaa">(opcional)</span></label>
-          <input type="text" id="inp-obs" placeholder="...">
-        </div>
-        <button class="btn-submit btn-ingreso" id="btn-submit" onclick="registrar()">
-          <i class="ti ti-check"></i> <span id="btn-txt">Registrar ingreso</span>
-        </button>
-      </div>
-
-      <div class="card">
-        <div class="section-title">
-          <span><i class="ti ti-chart-bar"></i> Balance general</span>
-          <button class="btn-download" onclick="descargarExcel()"><i class="ti ti-download"></i> Descargar Excel</button>
-        </div>
-        <div class="metrics">
-          <div class="metric m-in"><div class="mlbl">Total ingresos</div><div class="mval" id="tot-in">--</div></div>
-          <div class="metric m-eg"><div class="mlbl">Total egresos</div><div class="mval" id="tot-eg">--</div></div>
-          <div class="metric m-bal"><div class="mlbl">Stock neto</div><div class="mval" id="tot-bal">--</div></div>
-        </div>
-        <div class="chart-wrap"><canvas id="grafico-stock"></canvas></div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">
-          <span><i class="ti ti-list"></i> Movimientos recientes</span>
-          <span id="rec-count" style="font-weight:400;font-size:12px"></span>
-        </div>
-        <div class="filter-row">
-          <select id="flt-prod" onchange="actualizarFiltrosCascada()"><option value="">Todos los productos</option></select>
-          <select id="flt-tipo" onchange="actualizarFiltrosCascada()">
-            <option value="">Todos los tipos</option>
-            <option value="ingreso">Ingresos</option>
-            <option value="egreso">Egresos</option>
-          </select>
-          <select id="flt-lote" onchange="renderTabla()"><option value="">Todos los lotes</option></select>
-        </div>
-        <div class="tbl-wrap">
-          <div class="loading" id="loading-movs"><span class="spinner"></span>Cargando datos...</div>
-          <table id="tabla" style="display:none">
-            <thead>
-              <tr>
-                <th onclick="ordenarPor('tipo')">Tipo <span id="sort-tipo" class="sort-icon"></span></th>
-                <th onclick="ordenarPor('prod')">Producto <span id="sort-prod" class="sort-icon"></span></th>
-                <th onclick="ordenarPor('lote')">Lote <span id="sort-lote" class="sort-icon"></span></th>
-                <th onclick="ordenarPor('fecha')">Fecha <span id="sort-fecha" class="sort-icon"></span></th>
-                <th onclick="ordenarPor('cant')">Cant. <span id="sort-cant" class="sort-icon"></span></th>
-                <th onclick="ordenarPor('vencimiento')">Vencimiento <span id="sort-vencimiento" class="sort-icon"></span></th>
-                <th onclick="ordenarPor('destino')">Destino <span id="sort-destino" class="sort-icon"></span></th>
-                <th onclick="ordenarPor('obs')">Obs. <span id="sort-obs" class="sort-icon"></span></th>
-                <th class="only-admin"></th>
-              </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div id="panel-usuarios" class="panel-content" style="display:none">
-      <div class="card">
-        <h3 style="margin-bottom:14px; font-size:16px; color:#2F5496"><i class="ti ti-user-plus"></i> Registrar Nuevo Usuario</h3>
-        <div class="field">
-          <label>Nombre Completo</label>
-          <input type="text" id="user-nombre" placeholder="Ej: Juan Pérez">
-        </div>
-        <div class="field">
-          <label>Nombre de Usuario / Alias</label>
-          <input type="text" id="user-alias" placeholder="Ej: jperez">
-        </div>
-        <div class="field">
-          <label>Contraseña Acceso</label>
-          <input type="password" id="user-pass" placeholder="••••••••">
-        </div>
-        <div class="field">
-          <label>Perfil / Rol Asignado</label>
-          <select id="user-perfil">
-            <option value="Operador">Operador (Solo Carga y Visualización)</option>
-            <option value="Administrador">Administrador (Control Total y Usuarios)</option>
-          </select>
-        </div>
-        <button class="btn-submit btn-ingreso" id="btn-save-user" onclick="registrarUsuario()" style="background:#2F5496">
-          <i class="ti ti-device-floppy"></i> Guardar Usuario
-        </button>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<div class="modal-bg" id="modal-bg">
-  <div class="modal">
-    <h3 id="modal-title">Nuevo elemento</h3>
-    <input type="text" id="inp-nuevo-item" oninput="buscarCoincidencias()" placeholder="">
-    <div class="msg-error-modal" id="msg-error-modal">⚠️ Este ítem ya existe en el sistema</div>
-    <div class="coincidencias-box" id="coincidencias-box"></div>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-ok" id="btn-modal-save" onclick="saveModalData()">Agregar</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-var API = 'https://script.google.com/macros/s/AKfycbyTpW_HDEjeLcOrvLcL1h9-ozTWc2pPntnYmQ-Ea-ldg7OXFtCIDtHQxLBoGFCQxUw/exec';
-var tipo = 'ingreso';
-var movs = [];
-var productos = [];
-var destinos = [];
-var modalTarget = 'prod'; 
-var grafico = null;
-
-var usuarioActivo = null;
-var perfilActivo = null;
-
-var columnaOrden = 'fecha'; 
-var direccionOrden = 'desc'; 
-
-var hoy = new Date();
-var yyyy = hoy.getFullYear();
-var mm = String(hoy.getMonth() + 1).padStart(2, '0');
-var dd = String(hoy.getDate()).padStart(2, '0');
-var fechaHoyFormato = yyyy + '-' + mm + '-' + dd;
-
-var inpFecha = document.getElementById('inp-fecha');
-inpFecha.value = fechaHoyFormato;
-inpFecha.max = fechaHoyFormato;
-
-function formatFechaDisplay(val) {
-  if(!val) return '--';
-  if(val.indexOf('T') > -1) { 
-    var parts = val.split('T');
-    var dateParts = parts[0].split('-');
-    return dateParts[2] + '/' + dateParts[1] + '/' + dateParts[0] + ' ' + parts[1];
-  }
-  if(val.indexOf('-') > -1) { 
-    var p = val.split('-'); 
-    return p[2] + '/' + p[1] + '/' + p[0]; 
-  }
-  return val;
-}
-
-function apiPost(body) {
-  return fetch(API, {method:'POST', body: JSON.stringify(body)});
-}
-
-// --- LOGICA DE LOGIN Y SEGURIDAD ---
-function procesarLogin() {
-  var u = document.getElementById('login-user').value.trim();
-  var c = document.getElementById('login-pass').value;
-  
-  if(!u || !c) { showToast('Completa todos los campos', 'error'); return; }
-  
-  var btn = document.getElementById('btn-login');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Verificando...';
-  
-  apiPost({ action: 'login', usuario: u, clave: c })
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-      if(res.status === 'success') {
-        usuarioActivo = res.nombre;
-        perfilActivo = res.perfil;
+    <div class="sidebar" id="sidebar">
+        <a href="#" class="sidebar-brand">
+            <i class="fa-solid College-svgrepo-com"></i>
+            <span>SISTEMA INTEGRAL</span>
+        </a>
         
-        // Aplicar la clase de perfil al body para activar reglas CSS (ej: .only-admin)
-        document.body.className = 'perfil-' + perfilActivo;
-        document.getElementById('user-display').textContent = usuarioActivo;
-        document.getElementById('role-display').textContent = '(' + perfilActivo + ')';
+        <ul class="nav-menu">
+            <li class="nav-item-custom">
+                <a href="#" class="nav-link-custom active">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Panel Principal</span>
+                </a>
+            </li>
+            <li class="nav-item-custom">
+                <a href="#" class="nav-link-custom">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span>Ingresos</span>
+                </a>
+            </li>
+            <li class="nav-item-custom">
+                <a href="#" class="nav-link-custom">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    <span>Balance general</span>
+                </a>
+            </li>
+            <li class="nav-item-custom">
+                <a href="#" class="nav-link-custom">
+                    <i class="fa-solid fa-arrows-left-right-to-line"></i>
+                    <span>Movimientos</span>
+                </a>
+            </li>
+            <li class="nav-item-custom">
+                <a href="#" class="nav-link-custom">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>Alta de Usuarios</span>
+                </a>
+            </li>
+            <li class="nav-item-custom">
+                <a href="#" class="nav-link-custom">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Egresos</span>
+                </a>
+            </li>
+            <li class="nav-item-custom">
+                <a href="#" class="nav-link-custom">
+                    <i class="fa-solid fa-gears"></i>
+                    <span>Configuración</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="top-navbar d-flex justify-content-between align-items-center">
+            <button class="btn btn-light d-md-none" id="sidebarToggle">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="d-flex align-items-center gap-3">
+                <img src="https://via.placeholder.com/40" class="rounded-circle" alt="Logo">
+                <h4 class="mb-0" style="color: #0b1d3a; font-weight: 600;">
+                    <i class="fa-solid fa-network-wired me-2"></i>Gestión Operativa
+                </h4>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-circle-user fs-5 text-secondary"></i>
+                    <span>Admin</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                    <li><a class="dropdown-menu border-0 shadow" href="#">Mi Perfil</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#">Cerrar Sesión</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="container-fluid p-0">
+            <div class="row g-4">
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card card-custom bg-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted text-uppercase fs-7 fw-bold mb-2">Ingresos Mensuales</h6>
+                                <h3 class="mb-0 fw-bold">$450,200</h3>
+                            </div>
+                            <div class="bg-success-subtle text-success p-3 rounded-3">
+                                <i class="fa-solid fa-wallet fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card card-custom bg-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted text-uppercase fs-7 fw-bold mb-2">Balance General</h6>
+                                <h3 class="mb-0 fw-bold">$1,250,000</h3>
+                            </div>
+                            <div class="bg-primary-subtle text-primary p-3 rounded-3">
+                                <i class="fa-solid fa-scale-balanced fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card card-custom bg-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted text-uppercase fs-7 fw-bold mb-2">Movimientos del Mes</h6>
+                                <h3 class="mb-0 fw-bold">1,482</h3>
+                            </div>
+                            <div class="bg-warning-subtle text-warning p-3 rounded-3">
+                                <i class="fa-solid fa-arrows-left-right-to-line fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card card-custom bg-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted text-uppercase fs-7 fw-bold mb-2">Usuarios Activos</h6>
+                                <h3 class="mb-0 fw-bold">84</h3>
+                            </div>
+                            <div class="bg-info-subtle text-info p-3 rounded-3">
+                                <i class="fa-solid fa-user-plus fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle Sidebar para Móviles
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
         
-        document.getElementById('view-login').style.display = 'none';
-        document.getElementById('view-app').style.display = 'block';
-        
-        // Cargar los datos operativos de la hoja
-        cargarInicial();
-      } else {
-        showToast(res.message, 'error');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="ti ti-login"></i> Iniciar Sesión';
-      }
-    })
-    .catch(function(){
-      showToast('Error de conexión al procesar login', 'error');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="ti ti-login"></i> Iniciar Sesión';
-    });
-}
-
-function logout() {
-  usuarioActivo = null;
-  perfilActivo = null;
-  document.body.className = '';
-  document.getElementById('login-user').value = '';
-  document.getElementById('login-pass').value = '';
-  document.getElementById('view-app').style.display = 'none';
-  document.getElementById('view-login').style.display = 'flex';
-  document.getElementById('btn-login').disabled = false;
-  document.getElementById('btn-login').innerHTML = '<i class="ti ti-login"></i> Iniciar Sesión';
-}
-
-// --- LOGICA ALTA DE USUARIOS ---
-function registrarUsuario() {
-  var nom = document.getElementById('user-nombre').value.trim();
-  var alias = document.getElementById('user-alias').value.trim();
-  var pass = document.getElementById('user-pass').value;
-  var perf = document.getElementById('user-perfil').value;
-  
-  if(!nom || !alias || !pass){ showToast('Completa todos los campos obligatorios', 'error'); return; }
-  
-  var btn = document.getElementById('btn-save-user');
-  btn.disabled = true;
-  
-  apiPost({ action: 'addUsuario', usuario: alias, clave: pass, nombre: nom, perfil: perf })
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-      if(res.status === 'success') {
-        showToast('Usuario guardado con éxito', 'ingreso');
-        document.getElementById('user-nombre').value = '';
-        document.getElementById('user-alias').value = '';
-        document.getElementById('user-pass').value = '';
-      } else {
-        showToast(res.message, 'error');
-      }
-      btn.disabled = false;
-    })
-    .catch(function(){
-      showToast('Error al registrar usuario', 'error');
-      btn.disabled = false;
-    });
-}
-
-// --- CONTROL DE PANELES ---
-function setPanel(p) {
-  document.querySelectorAll('.panel-content').forEach(function(el){ el.style.display = 'none'; });
-  document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('active'); });
-  
-  if (p === 'ingreso' || p === 'egreso') {
-    document.getElementById('panel-movimientos').style.display = 'block';
-    document.getElementById('tab-' + p).classList.add('active');
-    setTipo(p);
-  } else if (p === 'admin') {
-    document.getElementById('panel-usuarios').style.display = 'block';
-    document.getElementById('tab-admin').classList.add('active');
-  }
-}
-
-function setTipo(t) {
-  tipo = t;
-  document.getElementById('lbl-fecha').textContent = t==='ingreso' ? 'Fecha de ingreso' : 'Fecha de egreso';
-  
-  if(t === 'ingreso') {
-    document.getElementById('fld-vencimiento').classList.add('show');
-    document.getElementById('fld-destino').classList.remove('show');
-  } else {
-    document.getElementById('fld-vencimiento').classList.remove('show');
-    document.getElementById('fld-destino').classList.add('show');
-  }
-  
-  var btn = document.getElementById('btn-submit');
-  btn.className = 'btn-submit btn-' + t;
-  btn.innerHTML = '<i class="ti ti-check"></i> <span id="btn-txt">Registrar ' + t + '</span>';
-}
-
-function cargarInicial() {
-  document.getElementById('loading-movs').style.display = 'block';
-  document.getElementById('tabla').style.display = 'none';
-  
-  apiPost({action:'getInicialData'})
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      productos = Array.isArray(data.productos) ? data.productos.filter(Boolean) : [];
-      destinos = Array.isArray(data.destinos) ? data.destinos.filter(Boolean) : [];
-      movs = Array.isArray(data.movimientos) ? data.movimientos : [];
-      movs = movs.map(function(m){ return Object.assign({}, m, {cant: parseFloat(m.cant)||0}); });
-      
-      populateCombos();
-      populateFiltroLotes(); 
-      document.getElementById('loading-movs').style.display = 'none';
-      document.getElementById('tabla').style.display = 'table';
-      renderTabla();
-      renderMetrics();
-    })
-    .catch(function(){ 
-      showToast('Error al sincronizar con la base de datos', 'error');
-    });
-}
-
-function populateCombos() {
-  var optsProd = productos.map(function(p){ 
-    var safe = escapeHtml(p); return '<option value="'+safe+'">'+safe+'</option>'; 
-  }).join('');
-  document.getElementById('sel-prod').innerHTML = '<option value="">Seleccionar producto...</option>' + optsProd;
-  document.getElementById('flt-prod').innerHTML = '<option value="">Todos los productos</option>' + optsProd;
-
-  var optsDest = destinos.map(function(d){ 
-    var safe = escapeHtml(d); return '<option value="'+safe+'">'+safe+'</option>'; 
-  }).join('');
-  document.getElementById('sel-destino').innerHTML = '<option value="">Seleccionar destino...</option>' + optsDest;
-}
-
-function populateFiltroLotes() {
-  var fProd = document.getElementById('flt-prod').value;
-  var fTipo = document.getElementById('flt-tipo').value;
-  var selectedLoteAntes = document.getElementById('flt-lote').value;
-
-  var lotesUnicos = [];
-  movs.forEach(function(m){
-    if(fProd && m.prod !== fProd) return;
-    if(fTipo && m.tipo !== fTipo) return;
-    if(m.lote && lotesUnicos.indexOf(m.lote) === -1) {
-      lotesUnicos.push(m.lote);
-    }
-  });
-  lotesUnicos.sort();
-  
-  var optsLote = lotesUnicos.map(function(l){
-    var safe = escapeHtml(l); return '<option value="'+safe+'">'+safe+'</option>';
-  }).join('');
-  
-  document.getElementById('flt-lote').innerHTML = '<option value="">Todos los lotes</option>' + optsLote;
-  
-  if(lotesUnicos.indexOf(selectedLoteAntes) > -1) {
-    document.getElementById('flt-lote').value = selectedLoteAntes;
-  } else {
-    document.getElementById('flt-lote').value = ""; 
-  }
-}
-
-function actualizarFiltrosCascada() {
-  populateFiltroLotes();
-  renderTabla();
-}
-
-function registrar() {
-  var prod = document.getElementById('sel-prod').value;
-  var lote = document.getElementById('inp-lote').value.trim();
-  var fecha = document.getElementById('inp-fecha').value;
-  var cant = parseFloat(document.getElementById('inp-cantidad').value);
-  var obs = document.getElementById('inp-obs').value;
-  var vencimiento = document.getElementById('inp-vencimiento').value;
-  var destinoVal = document.getElementById('sel-destino').value;
-
-  if(!prod){ showToast('Selecciona un producto','error'); return; }
-  if(!lote){ showToast('Ingresa un número de lote','error'); return; }
-  if(!/^[a-zA-Z0-9]+$/.test(lote)) { showToast('El lote debe ser alfanumérico','error'); return; }
-  if(!fecha){ showToast('Ingresa una fecha','error'); return; }
-  if(fecha > fechaHoyFormato) { showToast('La fecha no puede ser mayor a la del día de hoy','error'); return; }
-  if(!cant||cant<=0){ showToast('Ingresa una cantidad válida','error'); return; }
-  if(tipo === 'egreso' && !destinoVal){ showToast('Selecciona un destino','error'); return; }
-
-  var btn = document.getElementById('btn-submit');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Guardando...';
-  
-  var id = Date.now();
-  var payload = {
-    action: 'addMovimiento',
-    id: id,
-    tipo: tipo,
-    prod: prod,
-    lote: lote,
-    fecha: fecha,
-    cant: cant,
-    obs: obs,
-    vencimiento: tipo === 'ingreso' ? vencimiento : '',
-    destino: tipo === 'egreso' ? destinoVal : ''
-  };
-
-  apiPost(payload)
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-      if(res.status === 'success') {
-        movs.push({
-          id: String(id), tipo: tipo, prod: prod, lote: lote, fecha: fecha, 
-          cant: cant, obs: obs, vencimiento: payload.vencimiento, destino: payload.destino
-        });
-        document.getElementById('inp-cantidad').value = '';
-        document.getElementById('inp-obs').value = '';
-        document.getElementById('inp-lote').value = '';
-        document.getElementById('inp-vencimiento').value = '';
-        showToast(tipo==='ingreso'?'Ingreso registrado':'Egreso registrado', tipo);
-        populateFiltroLotes();
-        renderTabla();
-        renderMetrics();
-      } else {
-        showToast(res.message || 'Error al guardar', 'error');
-      }
-    })
-    .catch(function(){ showToast('Error al guardar. Revisa la conexión.','error'); })
-    .then(function(){
-      btn.disabled = false;
-      setTipo(tipo);
-    });
-}
-
-function eliminar(id) {
-  if(!confirm('¿Eliminar este movimiento?')) return;
-  apiPost({action:'deleteMovimiento', id:id})
-    .then(function(){
-      movs = movs.filter(function(m){ return String(m.id) !== String(id); });
-      populateFiltroLotes();
-      renderTabla();
-      renderMetrics();
-      showToast('Registro eliminado','egreso');
-    })
-    .catch(function(){ showToast('Error al eliminar','error'); });
-}
-
-function getResumen() {
-  var map = {};
-  movs.forEach(function(m){
-    if(!map[m.prod]) map[m.prod] = 0;
-    if(m.tipo === 'ingreso') map[m.prod] += m.cant;
-    else map[m.prod] -= m.cant;
-  });
-  return map;
-}
-
-function renderMetrics() {
-  var totIn = 0, totEg = 0;
-  movs.forEach(function(m){ if(m.tipo==='ingreso') totIn+=m.cant; else totEg+=m.cant; });
-  document.getElementById('tot-in').textContent = totIn.toFixed(2);
-  document.getElementById('tot-eg').textContent = totEg.toFixed(2);
-  var bal = totIn - totEg;
-  var bEl = document.getElementById('tot-bal');
-  bEl.textContent = bal.toFixed(2);
-  bEl.style.color = bal < 0 ? '#A32D2D' : bal === 0 ? '#888' : '#27500A';
-  renderGrafico();
-}
-
-function renderGrafico() {
-  var resumen = getResumen();
-  var prods = Object.keys(resumen);
-  var valores = prods.map(function(p){ return parseFloat(resumen[p].toFixed(2)); });
-  var colores = valores.map(function(v){ return v < 0 ? '#E24B4A' : v === 0 ? '#888780' : '#639922'; });
-  var ctx = document.getElementById('grafico-stock').getContext('2d');
-  if(grafico) grafico.destroy();
-  grafico = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: prods,
-      datasets: [{
-        label: 'Stock neto',
-        data: valores,
-        backgroundColor: colores,
-        borderRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: {display: false} },
-      scales: {
-        x: {grid: {display:false}, ticks: {font:{size:11}, color:'#666'}},
-        y: {grid: {color:'#f0f0f0'}, ticks: {font:{size:11}, color:'#666'}, beginAtZero:true}
-      }
-    }
-  });
-}
-
-function ordenarPor(columna) {
-  if (columnaOrden === columna) {
-    direccionOrden = (direccionOrden === 'asc') ? 'desc' : 'asc';
-  } else {
-    columnaOrden = columna;
-    direccionOrden = 'asc';
-  }
-  renderTabla();
-}
-
-function updateSortIcons() {
-  var columnas = ['tipo', 'prod', 'lote', 'fecha', 'cant', 'vencimiento', 'destino', 'obs'];
-  columnas.forEach(function(col) {
-    var el = document.getElementById('sort-' + col);
-    if(el) {
-      if (col === columnaOrden) {
-        el.textContent = (direccionOrden === 'asc') ? ' ▲' : ' ▼';
-        el.style.color = '#2F5496';
-      } else {
-        el.textContent = '';
-      }
-    }
-  });
-}
-
-function renderTabla() {
-  var fProd = document.getElementById('flt-prod').value;
-  var fTipo = document.getElementById('flt-tipo').value;
-  var fLote = document.getElementById('flt-lote').value;
-  
-  var filtered = movs.filter(function(m){
-    if(fProd && m.prod !== fProd) return false;
-    if(fTipo && m.tipo !== fTipo) return false;
-    if(fLote && m.lote !== fLote) return false;
-    return true;
-  });
-
-  filtered.sort(function(a, b) {
-    var valA, valB;
-    if (columnaOrden === 'cant') {
-      valA = parseFloat(a.cant) || 0;
-      valB = parseFloat(b.cant) || 0;
-    } else {
-      valA = (a[columnaOrden] || '').toLowerCase();
-      valB = (b[columnaOrden] || '').toLowerCase();
-    }
-    if (valA < valB) return (direccionOrden === 'asc') ? -1 : 1;
-    if (valA > valB) return (direccionOrden === 'asc') ? 1 : -1;
-    return 0;
-  });
-
-  updateSortIcons();
-
-  document.getElementById('rec-count').textContent = filtered.length + ' registro' + (filtered.length!==1?'s':'');
-  var tbody = document.getElementById('tbody');
-  tbody.innerHTML = '';
-  
-  if(!filtered.length){
-    tbody.innerHTML = '<tr><td colspan="9"><div class="empty">Sin movimientos registrados</div></td></tr>';
-    return;
-  }
-  
-  filtered.forEach(function(m){
-    var tr = document.createElement('tr');
-    var vencCell = m.vencimiento ? formatFechaDisplay(m.vencimiento) : '<span style="color:#ccc">--</span>';
-    var destCell = m.destino ? `<i class="ti ti-map-pin" style="font-size:11px;color:#888"></i> ${escapeHtml(m.destino)}` : '<span style="color:#ccc">--</span>';
-
-    // Acción borrar disponible solo para Administradores
-    var accionBorrar = (perfilActivo === 'Administrador') ? `<button class="del-btn" onclick="eliminar('${m.id}')"><i class="ti ti-trash"></i></button>` : '';
-
-    tr.innerHTML = `
-      <td><span class="badge badge-${m.tipo}">${m.tipo==='ingreso'?'Ingreso':'Egreso'}</span></td>
-      <td><b>${escapeHtml(m.prod)}</b></td>
-      <td><span style="font-family:monospace; background:#eee; padding:2px 4px; border-radius:4px">${escapeHtml(m.lote)}</span></td>
-      <td>${formatFechaDisplay(m.fecha)}</td>
-      <td>${parseFloat(m.cant).toFixed(2)}</td>
-      <td>${vencCell}</td>
-      <td>${destCell}</td>
-      <td style="color:#aaa; font-size:12px">${escapeHtml(m.obs) || '--'}</td>
-      <td class="only-admin">${accionBorrar}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function openModal(target) {
-  modalTarget = target;
-  var title = document.getElementById('modal-title');
-  var input = document.getElementById('inp-nuevo-item');
-  document.getElementById('msg-error-modal').style.display = 'none';
-  document.getElementById('coincidencias-box').style.display = 'none';
-  document.getElementById('btn-modal-save').disabled = false;
-
-  if(target === 'prod') {
-    title.textContent = 'Nuevo Producto / Reactivo';
-    input.placeholder = 'Nombre del producto';
-  } else {
-    title.textContent = 'Nuevo Destino de Egreso';
-    input.placeholder = 'Ej: Laboratorio Hematología';
-  }
-  document.getElementById('modal-bg').classList.add('open');
-  setTimeout(function(){ input.focus(); }, 50);
-}
-
-function closeModal() {
-  document.getElementById('modal-bg').classList.remove('open');
-  document.getElementById('inp-nuevo-item').value = '';
-}
-
-function buscarCoincidencias() {
-  var value = document.getElementById('inp-nuevo-item').value.trim().toLowerCase();
-  var errorEl = document.getElementById('msg-error-modal');
-  var boxEl = document.getElementById('coincidencias-box');
-  var btnSave = document.getElementById('btn-modal-save');
-  
-  errorEl.style.display = 'none';
-  boxEl.style.display = 'none';
-  boxEl.innerHTML = '';
-  btnSave.disabled = false;
-
-  if (!value) return;
-
-  var listaOrigen = (modalTarget === 'prod') ? productos : destinos;
-  var yaExiste = listaOrigen.some(function(item) { return item.toLowerCase() === value; });
-
-  if (yaExiste) {
-    errorEl.style.display = 'block';
-    btnSave.disabled = true; 
-  }
-
-  var coincidencias = listaOrigen.filter(function(item) {
-    return item.toLowerCase().indexOf(value) > -1 && item.toLowerCase() !== value;
-  });
-
-  if (coincidencias.length > 0) {
-    boxEl.style.display = 'block';
-    coincidencias.forEach(function(item) {
-      var itemEl = document.createElement('div');
-      itemEl.className = 'coincidencia-item';
-      itemEl.textContent = item;
-      itemEl.onclick = function() {
-        document.getElementById('inp-nuevo-item').value = item;
-        buscarCoincidencias(); 
-      };
-      boxEl.appendChild(itemEl);
-    });
-  }
-}
-
-function saveModalData() {
-  var value = document.getElementById('inp-nuevo-item').value.trim();
-  if(!value) return;
-  var valueLower = value.toLowerCase();
-
-  if(modalTarget === 'prod') {
-    var existeProd = productos.some(function(p) { return p.toLowerCase() === valueLower; });
-    if(existeProd){ showToast('El producto ya existe','error'); return; }
-    apiPost({action:'addProd', prod:value})
-      .then(function(){
-        productos.push(value);
-        populateCombos();
-        document.getElementById('sel-prod').value = value;
-        closeModal();
-        showToast('Producto agregado','ingreso');
-      })
-      .catch(function(){ showToast('Error al guardar producto','error'); });
-  } else {
-    var existeDest = destinos.some(function(d) { return d.toLowerCase() === valueLower; });
-    if(existeDest){ showToast('El destino ya se encuentra registrado','error'); return; }
-    apiPost({action:'addDestino', destino:value})
-      .then(function(){
-        destinos.push(value);
-        populateCombos();
-        document.getElementById('sel-destino').value = value;
-        closeModal();
-        showToast('Destino agregado','ingreso');
-      })
-      .catch(function(){ showToast('Error al guardar destino','error'); });
-  }
-}
-
-function descargarExcel() {
-  var filas = [['Tipo', 'Producto', 'Lote', 'Fecha', 'Cantidad', 'Vencimiento', 'Destino', 'Observaciones']];
-  movs.forEach(function(m){
-    filas.push([m.tipo, m.prod, m.lote, m.fecha, m.cant, m.vencimiento || '--', m.destino || '--', m.obs || '']);
-  });
-  var ws = XLSX.utils.aoa_to_sheet(filas);
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Historial');
-  XLSX.writeFile(wb, 'Historial_Reactivos_Lotes.xlsx');
-}
-
-function showToast(msg, t) {
-  var el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast toast-' + (t==='ingreso'?'ingreso':t==='egreso'?'egreso':'error');
-  el.style.opacity = 1;
-  setTimeout(function(){ el.style.opacity = 0; }, 2500);
-}
-
-function escapeHtml(str) {
-  if(!str) return '';
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-</script>
+        if(sidebarToggle) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+            });
+        }
+    </script>
 </body>
 </html>
