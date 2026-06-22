@@ -532,8 +532,9 @@ function populateFiltroLotes() {
   movs.forEach(function(m){
     if(fProd && m.prod !== fProd) return;
     if(fTipo && m.tipo !== fTipo) return;
-    if(m.lote && lotesUnicos.indexOf(m.lote) === -1) {
-      lotesUnicos.push(m.lote);
+    var loteStr = (m.lote === null || m.lote === undefined) ? '' : String(m.lote);
+    if(loteStr && lotesUnicos.indexOf(loteStr) === -1) {
+      lotesUnicos.push(loteStr);
     }
   });
   lotesUnicos.sort();
@@ -715,7 +716,7 @@ function renderTabla() {
   var filtered = movs.filter(function(m){
     if(fProd && m.prod !== fProd) return false;
     if(fTipo && m.tipo !== fTipo) return false;
-    if(fLote && m.lote !== fLote) return false;
+    if(fLote && String(m.lote) !== fLote) return false;
     return true;
   });
 
@@ -883,7 +884,8 @@ function showToast(msg, t) {
 }
 
 function escapeHtml(str) {
-  if(!str) return '';
+  if(str === null || str === undefined || str === '') return '';
+  str = String(str);
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 </script>
