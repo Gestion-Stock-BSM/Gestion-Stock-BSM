@@ -308,7 +308,7 @@ body.perfil-Administrador th.only-admin, body.perfil-Administrador td.only-admin
 <div class="toast" id="toast"></div>
 
 <script>
-var API = 'https://script.google.com/macros/s/AKfycbxqKYz51ngOheLnnpinI21KKYmtP7UB93tuR5yvatFPrIKxhhqddUtSuc1PMebGGm2w/exec';
+var API = 'https://script.google.com/macros/s/AKfycbwwwLubDjx9Q2YibOSdlN9qjJaAS1wYHP1-vA6Rf0H4VPrswKSepjBD55cxFurfrs_X/exec';
 var tipo = 'ingreso';
 var movs = [];
 var productos = [];
@@ -346,9 +346,24 @@ function formatFechaDisplay(val) {
   return val;
 }
 
-function apiPost(body) {
+function apiPost(body, intentos) {
+  if (intentos === undefined) intentos = 2; // total de intentos permitidos
   var url = API + '?payload=' + encodeURIComponent(JSON.stringify(body));
-  return fetch(url, {method:'GET'});
+
+  return fetch(url, {method:'GET'})
+    .then(function(r){
+      if (!r.ok) { throw new Error('HTTP ' + r.status); }
+      return r.json();
+    })
+    .catch(function(err){
+      if (intentos > 1) {
+        // Reintenta tras una breve espera (la petición pudo fallar
+        // solo al seguir la redirección de Google, no al guardar).
+        return new Promise(function(resolve){ setTimeout(resolve, 800); })
+          .then(function(){ return apiPost(body, intentos - 1); });
+      }
+      throw err;
+    });
 }
 
 // --- LOGICA DE LOGIN Y SEGURIDAD ---
@@ -363,7 +378,6 @@ function procesarLogin() {
   btn.innerHTML = '<span class="spinner"></span> Verificando...';
   
   apiPost({ action: 'login', usuario: u, clave: c })
-    .then(function(r){ return r.json(); })
     .then(function(res){
       if(res.status === 'success') {
         usuarioActivo = res.nombre;
@@ -417,7 +431,6 @@ function registrarUsuario() {
   btn.disabled = true;
   
   apiPost({ action: 'addUsuario', usuario: alias, clave: pass, nombre: nom, perfil: perf })
-    .then(function(r){ return r.json(); })
     .then(function(res){
       if(res.status === 'success') {
         showToast('Usuario guardado con éxito', 'ingreso');
@@ -479,7 +492,6 @@ function cargarInicial() {
   document.getElementById('tabla').style.display = 'none';
   
   apiPost({action:'getInicialData'})
-    .then(function(r){ return r.json(); })
     .then(function(data){
       productos = Array.isArray(data.productos) ? data.productos.filter(Boolean) : [];
       destinos = Array.isArray(data.destinos) ? data.destinos.filter(Boolean) : [];
@@ -580,7 +592,6 @@ function registrar() {
   };
 
   apiPost(payload)
-    .then(function(r){ return r.json(); })
     .then(function(res){
       if(res.status === 'success') {
         movs.push({
